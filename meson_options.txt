@@ -1,0 +1,1 @@
+option('qt', type : 'boolean', value : false, description : 'Build tests with Qt support.')
