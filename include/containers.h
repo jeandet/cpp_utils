@@ -1,12 +1,13 @@
-#ifndef CONTAINERS_H
-#define CONTAINERS_H
+#ifndef CONTAINERS_H_INCLUDED
+#define CONTAINERS_H_INCLUDED
+
 #include "cpp_utils.h"
 
 #include <algorithm>
 #include <map>
 #include <vector>
 
-namespace SciQLop::containers
+namespace cpp_utils::containers
 {
   template<class T1, class T2>
   auto contains(const T1& container, const T2& value)
@@ -46,4 +47,4 @@ namespace SciQLop::containers
 
 } // namespace SciQLop::containers
 
-#endif // CONTAINERS_H
+#endif // CONTAINERS_H_INCLUDED

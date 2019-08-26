@@ -1,11 +1,13 @@
 #pragma once
 #include "cpp_utils.h"
-#include "types_detectors.h"
+#include "types/types_detectors.hpp"
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 
+namespace cpp_utils::trees{
+    using namespace cpp_utils::types_detectors;
 
 template<typename string_type=std::string>
 struct tree_node
@@ -66,7 +68,7 @@ void _print_tree(const T& tree, int indent_increment, int indent_lvl, U& ostream
     ostream << " "<< _get_name(to_value(node)) << std::endl;
     _print_tree(to_value(node), indent_increment, indent_lvl+1, ostream);
   };
-  if constexpr(is_qt_tree_item<T>::value)
+  if constexpr(is_qt_tree_item_v<T>)
   {
     for(int i = 0; i < tree.childCount(); i++)
     {
@@ -84,4 +86,6 @@ void print_tree(const T& tree, U& ostream=std::cout)
 {
     ostream << _get_name(to_value(tree)) << std::endl;
   _print_tree(to_value(tree), indent_increment, 0, ostream);
+}
+
 }

@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+using namespace cpp_utils::types_detectors;
+using namespace cpp_utils::trees;
+
 std::unique_ptr<tree_node<>> make_test_tree()
 {
         auto root = std::make_unique<tree_node<>>("root");
