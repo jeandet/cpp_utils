@@ -1,13 +1,13 @@
 #pragma once
-#include "cpp_utils.h"
-#include "types/types_detectors.hpp"
+#include "cpp_utils.hpp"
+#include "types/detectors.hpp"
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 
 namespace cpp_utils::trees{
-    using namespace cpp_utils::types_detectors;
+    using namespace cpp_utils::types::detectors;
 
 template<typename string_type=std::string>
 struct tree_node
@@ -39,16 +39,16 @@ HAS_METHOD(text)
 
 template<typename T> std::string _get_name(const T& item)
 {
-  if constexpr(has_name_method<T>) { return _get_name(item.name()); }
-  else if constexpr(has_text_method<T>)
+  if constexpr(has_name_method_v<T>) { return _get_name(item.name()); }
+  else if constexpr(has_text_method_v<T>)
   {
     return _get_name(item.text(0));
   }
-  else if constexpr(has_toStdString_method<T>)
+  else if constexpr(has_toStdString_method_v<T>)
   {
     return _get_name(item.toStdString());
   }
-  else if constexpr (has_name_member_object<T>)
+  else if constexpr (has_name_member_object_v<T>)
   {
       return to_std_string(item.name);
   }

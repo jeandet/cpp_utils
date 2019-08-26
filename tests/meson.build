@@ -32,6 +32,11 @@ tests = [
         'name':'TestQtTypesDetector',
         'sources': ['types/qt_types_detector.cpp'],
         'deps': [cpp_utils_dep, catch2_dep, qt5_dep]
+    },
+    {
+        'name':'TestContainers',
+        'sources': ['containers/test_containers.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
     }
 ]
 

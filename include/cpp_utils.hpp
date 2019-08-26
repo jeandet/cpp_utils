@@ -1,7 +1,7 @@
 #ifndef CPP_UTILS_H
 #define CPP_UTILS_H
 
-#include "types/types_detectors.hpp"
+#include "types/detectors.hpp"
 #include "types/pointers.hpp"
 
 #include <functional>
@@ -77,7 +77,7 @@ template < typename T > std::string to_std_string (const T & text)
       return text;
     }
   else if constexpr
-    (cpp_utils::types_detectors::has_toStdString_method < T >)
+    (cpp_utils::types::detectors::has_toStdString_method_v < T >)
     {
       return text.toStdString ();
     }

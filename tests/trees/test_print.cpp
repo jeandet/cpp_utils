@@ -1,12 +1,12 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch2/catch.hpp>
 #include <trees.h>
-#include <cpp_utils.h>
+#include <cpp_utils.hpp>
 #include <memory>
 #include <string>
 #include <vector>
 
-using namespace cpp_utils::types_detectors;
+using namespace cpp_utils::types::detectors;
 using namespace cpp_utils::trees;
 
 std::unique_ptr<tree_node<>> make_test_tree()

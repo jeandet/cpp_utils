@@ -2,7 +2,7 @@
 #include <catch2/catch.hpp>
 #include <memory>
 #include <types/pointers.hpp>
-#include <types/types_detectors.hpp>
+#include <types/detectors.hpp>
 
 
 TEST_CASE("Smart pointers", "[types]")

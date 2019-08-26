@@ -15,14 +15,14 @@
 TEST_CASE("Qt types detector", "[types]")
 {
 
-    using namespace cpp_utils::types_detectors;
+    using namespace cpp_utils::types::detectors;
     using namespace cpp_utils::trees;
 
     REQUIRE(is_qt_tree_item<QTreeWidgetItem>::value);
     REQUIRE(!is_qt_tree_item<tree_node<>>::value);
 
-    REQUIRE(has_toStdString_method<QString>);
-    REQUIRE(!has_toStdString_method<std::string>);
+    REQUIRE(has_toStdString_method_v<QString>);
+    REQUIRE(!has_toStdString_method_v<std::string>);
 
     using namespace cpp_utils::types::pointers;
 

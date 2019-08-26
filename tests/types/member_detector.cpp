@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch2/catch.hpp>
-#include <types/types_detectors.hpp>
+#include <types/detectors.hpp>
 #include <map>
 #include <iostream>
 
@@ -24,11 +24,11 @@ HAS_MEMBER(method)
 
 
 TEST_CASE( "Member detector", "[types]" ) {
-    REQUIRE(has_valid_member_object<TestStruc>);
-    REQUIRE(!has_absent_member_object<TestStruc>);
-    REQUIRE(!has_method_member_object<TestStruc>);
+    REQUIRE(has_valid_member_object_v<TestStruc>);
+    REQUIRE(!has_absent_member_object_v<TestStruc>);
+    REQUIRE(!has_method_member_object_v<TestStruc>);
     
-    REQUIRE(has_valid_member_object<DerivedTestStruc>);
+    REQUIRE(has_valid_member_object_v<DerivedTestStruc>);
     
-    REQUIRE(!has_valid_member_object<PrivateDerivedTestStruc>);
+    REQUIRE(!has_valid_member_object_v<PrivateDerivedTestStruc>);
 }
