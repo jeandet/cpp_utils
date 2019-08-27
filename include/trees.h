@@ -33,8 +33,8 @@ struct tree_node
 
 namespace{
 HAS_MEMBER(name)
-HAS_METHOD(name)
-HAS_METHOD(text)
+HAS_METHOD(has_name_method, name)
+HAS_METHOD(has_text_method, text)
 };
 
 template<typename T> std::string _get_name(const T& item)

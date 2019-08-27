@@ -17,7 +17,7 @@ TEST_CASE("Containers", "[Containers]")
 {
 #define TEST_CONTAINER(type)                                                                       \
     {                                                                                              \
-        std::type<double> type { 1., 2., 3. };                                                 \
+        std::type<double> type { 1., 2., 3. };                                                     \
         REQUIRE(contains(type, 1.));                                                               \
         REQUIRE(!contains(type, 10.));                                                             \
         REQUIRE(index_of(type, 2.) == 1);                                                          \

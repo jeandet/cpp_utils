@@ -1,22 +1,29 @@
 #pragma once
 #include <type_traits>
 
-#define HAS_METHOD(method)                                                                         \
-    template <class T, class = void>                                                               \
-    struct has_##method##_method : std::false_type                                                 \
+
+// https://stackoverflow.com/questions/28309164/checking-for-existence-of-an-overloaded-member-function
+#define HAS_METHOD(name, method, ...)                                                              \
+    template <typename T, typename... Args>                                                        \
+    struct _##name                                                                                 \
     {                                                                                              \
+        template <typename C,                                                                      \
+            typename = decltype(std::declval<C>().method(std::declval<Args>()...))>                \
+        static std::true_type test(int);                                                           \
+        template <typename C>                                                                      \
+        static std::false_type test(...);                                                          \
+                                                                                                   \
+    public:                                                                                        \
+        static constexpr bool value = decltype(test<T>(0))::value;                                 \
     };                                                                                             \
                                                                                                    \
-    template <class T>                                                                             \
-    struct has_##method##_method<T,                                                                \
-        std::void_t<std::is_member_function_pointer<decltype(&T::method)>>>                        \
-            : std::is_member_function_pointer<decltype(&T::method)>                                \
+    template <typename T>                                                                          \
+    struct name : std::integral_constant<bool, _##name<T, ##__VA_ARGS__>::value>                   \
     {                                                                                              \
     };                                                                                             \
-                                                                                                   \
-                                                                                                   \
-    template <class T>                                                                             \
-    static inline constexpr bool has_##method##_method_v = has_##method##_method<T>::value;
+    template <typename T>                                                                          \
+    static inline constexpr bool name##_v = _##name<T, ##__VA_ARGS__>::value;
+
 
 #define HAS_MEMBER(member)                                                                         \
     template <class T, class = void>                                                               \
@@ -54,5 +61,6 @@ template <class T>
 static inline constexpr bool is_qt_tree_item_v = is_qt_tree_item<T>::value;
 
 
-HAS_METHOD(toStdString)
+HAS_METHOD(has_toStdString_method, toStdString)
 }
+
