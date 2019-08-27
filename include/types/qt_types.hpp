@@ -2,6 +2,12 @@
 #define QT_TYPES_HPP_INCLUDED
 
 #include "pointers.hpp"
+#include <QExplicitlySharedDataPointer>
+#include <QScopedArrayPointer>
+#include <QScopedPointer>
+#include <QSharedDataPointer>
+#include <QSharedPointer>
+#include <QWeakPointer>
 #include <type_traits>
 
 namespace cpp_utils::types::pointers
@@ -13,17 +19,15 @@ struct is_QExplicitlySharedDataPointer : std::false_type
 };
 
 template <typename T>
-struct is_QExplicitlySharedDataPointer<T,
-    decltype(std::declval<T>().take(), !std::declval<T>(), std::declval<T>().data(),
-        std::declval<T>().reset(), std::declval<T>().detach(), void())>
-        : std::conjunction<is_dereferencable<T>>
+struct is_QExplicitlySharedDataPointer<T, decltype(std::declval<typename T::Type>(), void())>
+        : std::is_same<T, QExplicitlySharedDataPointer<typename T::Type>>
 {
 };
 
 template <class T>
 static inline constexpr bool is_QExplicitlySharedDataPointer_v
     = is_QExplicitlySharedDataPointer<T>::value;
-    
+
 
 template <typename T, typename = void>
 struct is_QSharedDataPointer : std::false_type
@@ -31,9 +35,8 @@ struct is_QSharedDataPointer : std::false_type
 };
 
 template <typename T>
-struct is_QSharedDataPointer<T,
-    decltype(std::declval<T>().constData(), std::declval<T>().data(), std::declval<T>().detach(),
-        void())> : std::conjunction<is_dereferencable<T>,std::negation<is_QExplicitlySharedDataPointer<T>>>
+struct is_QSharedDataPointer<T, decltype(std::declval<typename T::Type>(), void())>
+        : std::is_same<T, QSharedDataPointer<typename T::Type>>
 {
 };
 
@@ -47,10 +50,8 @@ struct is_QSharedPointer : std::false_type
 };
 
 template <typename T>
-struct is_QSharedPointer<T,
-    decltype(std::declval<T>().get(), std::declval<T>().isNull(), std::declval<T>().clear(),
-        std::declval<T>().data(), std::declval<T>().reset(), void())>
-        : std::conjunction<is_dereferencable<T>,std::negation<is_QExplicitlySharedDataPointer<T>>>
+struct is_QSharedPointer<T, decltype(std::declval<typename T::Type>(), void())>
+        : std::is_same<T, QSharedPointer<typename T::Type>>
 {
 };
 
@@ -64,9 +65,8 @@ struct is_QWeakPointer : std::false_type
 };
 
 template <typename T>
-struct is_QWeakPointer<T,
-    decltype(std::declval<T>().clear(), std::declval<T>().data(), std::declval<T>().isNull(),
-        std::declval<T>().toStrongRef(), std::declval<T>().lock(), void())> : std::true_type
+struct is_QWeakPointer<T, decltype(void())>
+        : std::is_same<T, QWeakPointer<std::remove_pointer_t<decltype(std::declval<T>().data())>>>
 {
 };
 
@@ -79,10 +79,9 @@ struct is_QScopedArrayPointer : std::false_type
 };
 
 template <typename T>
-struct is_QScopedArrayPointer<T,
-    decltype(std::declval<T>()[0], std::declval<T>().take(), std::declval<T>().get(),
-        std::declval<T>().data(), std::declval<T>().reset(nullptr), std::declval<T>().isNull(),
-        void())> : is_dereferencable<T>
+struct is_QScopedArrayPointer<T, decltype(void())>
+        : std::is_same<T,
+              QScopedArrayPointer<std::remove_pointer_t<decltype(std::declval<T>().data())>>>
 {
 };
 
@@ -96,10 +95,8 @@ struct is_QScopedPointer : std::false_type
 };
 
 template <typename T>
-struct is_QScopedPointer<T,
-    decltype(std::declval<T>().take(), std::declval<T>().get(), std::declval<T>().data(),
-        std::declval<T>().reset(nullptr), std::declval<T>().isNull(), void())>
-        : std::conjunction<is_dereferencable<T>, std::negation<is_QScopedArrayPointer<T>>>
+struct is_QScopedPointer<T, decltype(void())>
+        : std::is_same<T, QScopedPointer<std::remove_pointer_t<decltype(std::declval<T>().data())>>>
 {
 };
 
@@ -118,18 +115,7 @@ template <class T>
 static inline constexpr bool is_qt_smart_ptr_v = is_qt_smart_ptr<T>::value;
 
 template <typename T>
-struct is_smart_ptr<T, std::enable_if_t<std::disjunction_v<is_qt_smart_ptr<T>>>> : std::true_type
-{
-};
-
-
-template <typename T, typename = void>
-struct is_smart_ptr2 : std::false_type
-{
-};
-
-template <typename T>
-struct is_smart_ptr2<T, std::enable_if_t<std::disjunction_v<is_qt_smart_ptr<T>>>> : std::true_type
+struct is_smart_ptr<T, std::enable_if_t<is_qt_smart_ptr_v<T>>> : std::true_type
 {
 };
 
