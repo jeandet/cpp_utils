@@ -41,6 +41,22 @@
     static inline constexpr bool has_##member##_member_object_v                                    \
         = has_##member##_member_object<T>::value;
 
+
+#define HAS_TYPE(type)                                                                             \
+    template <typename T, typename = void>                                                         \
+    struct has_##type##_type : std::false_type                                                     \
+    {                                                                                              \
+    };                                                                                             \
+                                                                                                   \
+    template <typename T>                                                                          \
+    struct has_##type##_type<T, decltype(std::declval<typename T::type>(), void())>                \
+            : std::true_type                                                                       \
+    {                                                                                              \
+    };                                                                                             \
+                                                                                                   \
+    template <class T>                                                                             \
+    static inline constexpr bool has_##type##_type_v = has_##type##_type<T>::value;
+
 namespace cpp_utils::types::detectors
 {
 
@@ -63,4 +79,3 @@ static inline constexpr bool is_qt_tree_item_v = is_qt_tree_item<T>::value;
 
 HAS_METHOD(has_toStdString_method, toStdString)
 }
-

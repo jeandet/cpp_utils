@@ -27,7 +27,7 @@ TEST_CASE("Qt types detector", "[types]")
     using namespace cpp_utils::types::pointers;
 
 #define _PTR_TEST(name, type)                                                                      \
-    auto test_##name##_##type##_lambda = []() -> bool {                                                              \
+    auto test_##name##_##type##_lambda = []() -> bool {                                            \
         if constexpr (std::is_same_v<name<int>, type<int>>)                                        \
             return is_##type##_v<name<int>>;                                                       \
         return !is_##type##_v<name<int>>;                                                          \

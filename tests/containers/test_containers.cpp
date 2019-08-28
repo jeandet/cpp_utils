@@ -15,9 +15,9 @@ using namespace cpp_utils::containers;
 
 TEST_CASE("Containers", "[Containers]")
 {
-#define TEST_CONTAINER(type)                                                                       \
+#define TEST_CONTAINER(type, ...)                                                                  \
     {                                                                                              \
-        std::type<double> type { 1., 2., 3. };                                                     \
+        std::type<double, ##__VA_ARGS__> type { 1., 2., 3. };                                      \
         REQUIRE(contains(type, 1.));                                                               \
         REQUIRE(!contains(type, 10.));                                                             \
         REQUIRE(index_of(type, 2.) == 1);                                                          \
@@ -27,14 +27,11 @@ TEST_CASE("Containers", "[Containers]")
     TEST_CONTAINER(vector)
     TEST_CONTAINER(deque)
     TEST_CONTAINER(forward_list)
+    TEST_CONTAINER(array, 3)
 
     std::set<double> set { 1., 2., 3. };
-    std::array<double, 3> arr { 1., 2., 3. };
     std::map<char, double> map { { 'a', 1. }, { 'b', 2. }, { 'c', 3. } };
 
-    REQUIRE(contains(arr, 1.));
-    REQUIRE(!contains(arr, 10.));
-    REQUIRE(index_of(arr, 2.) == 1);
 
     REQUIRE(contains(set, 1.));
     REQUIRE(!contains(set, 10.));

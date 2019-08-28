@@ -24,6 +24,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestTypeDetector',
+        'sources': ['types/type_detector.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestSmartPointers',
         'sources': ['types/smart_pointers.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

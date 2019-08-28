@@ -17,6 +17,12 @@ namespace cpp_utils::containers
   HAS_METHOD(has_clear_method, clear )
   HAS_METHOD(has_erase_method, erase, __item_type)
   HAS_METHOD(has_front_method, front)
+  HAS_METHOD(has_begin_method, begin)
+  HAS_METHOD(has_end_method, end)
+  HAS_METHOD(has_swap_method, swap, T)
+  HAS_METHOD(has_size_method, size)
+  HAS_METHOD(has_empty_method, empty)
+  
 /**  
   HAS_METHOD(back)
   HAS_METHOD(assign)
