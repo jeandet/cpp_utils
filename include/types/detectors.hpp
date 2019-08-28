@@ -1,6 +1,33 @@
 #pragma once
 #include <type_traits>
 
+//TODO find a way to merge IS_TEMPLATE_T with IS_T
+#define IS_TEMPLATE_T(name, type)                                                                  \
+    template <typename T>                                                                          \
+    struct name : std::false_type                                                                  \
+    {                                                                                              \
+    };                                                                                             \
+    template <typename ...T>                                                                          \
+    struct name<type<T...>> : std::true_type                                                          \
+    {                                                                                              \
+    };                                                                                             \
+                                                                                                   \
+    template <typename T>                                                                          \
+    static inline constexpr bool name##_v = name<T>::value;
+
+#define IS_T(name, type)                                                                           \
+    template <typename T>                                                                          \
+    struct name : std::false_type                                                                  \
+    {                                                                                              \
+    };                                                                                             \
+    template <>                                                                                    \
+    struct name<type> : std::true_type                                                             \
+    {                                                                                              \
+    };                                                                                             \
+                                                                                                   \
+    template <typename T>                                                                          \
+    static inline constexpr bool name##_v = name<T>::value;
+
 
 // https://stackoverflow.com/questions/28309164/checking-for-existence-of-an-overloaded-member-function
 #define HAS_METHOD(name, method, ...)                                                              \
