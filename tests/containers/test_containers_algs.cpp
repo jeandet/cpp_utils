@@ -12,11 +12,11 @@
 
 namespace std
 {
-    template<typename T>
-    std::size_t size(const std::forward_list<T>& list)
-    {
-       return std::distance(std::cbegin(list),std::cend(list));
-    }
+template <typename T>
+std::size_t size(const std::forward_list<T>& list)
+{
+    return std::distance(std::cbegin(list), std::cend(list));
+}
 }
 
 
@@ -34,7 +34,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     }
 #define TEST_CONTAINER_CONTAINS(type, init, ...)                                                   \
     {                                                                                              \
-        std::type<double,##__VA_ARGS__> type init;                                                \
+        std::type<double, ##__VA_ARGS__> type init;                                                \
         REQUIRE(contains(type, 1.));                                                               \
         REQUIRE(!contains(type, 10.));                                                             \
     }
@@ -43,10 +43,10 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {                                                                                              \
         std::type<double, ##__VA_ARGS__> type init;                                                \
         REQUIRE(index_of(type, 2.) == 1);                                                          \
-        REQUIRE(index_of(type, 1111.) == std::size(type));                                                          \
+        REQUIRE(index_of(type, 1111.) == std::size(type));                                         \
     }
 
-    
+
     TEST_CONTAINER_CONTAINS(list, default_init)
     TEST_CONTAINER_CONTAINS(vector, default_init)
     TEST_CONTAINER_CONTAINS(deque, default_init)
@@ -59,13 +59,13 @@ TEST_CASE("Containers algorithms", "[Containers]")
     TEST_CONTAINER_INDEX_OF(forward_list, default_init)
     TEST_CONTAINER_INDEX_OF(array, default_init, 3)
     TEST_CONTAINER_INDEX_OF(set, default_init)
-    
+
     TEST_CONTAINER_CONTAINS(map, associative_init, char)
 
     {
         std::string test { "/part1/part2/part3" };
         std::vector<std::string> res;
-        decltype(res) expected{ "part1", "part2", "part3" };
+        decltype(res) expected { "part1", "part2", "part3" };
         split(test, res, '/');
         REQUIRE(std::size(res) == std::size(expected));
         REQUIRE(res == expected);
@@ -73,7 +73,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {
         std::string test { "" };
         std::vector<std::string> res;
-        decltype(res) expected{};
+        decltype(res) expected {};
         split(test, res, '/');
         REQUIRE(std::size(res) == std::size(expected));
         REQUIRE(res == expected);
@@ -81,7 +81,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {
         std::string test { "///////" };
         std::vector<std::string> res;
-        decltype(res) expected{};
+        decltype(res) expected {};
         split(test, res, '/');
         REQUIRE(std::size(res) == std::size(expected));
         REQUIRE(res == expected);
@@ -89,7 +89,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {
         std::string test { "/path/" };
         std::vector<std::string> res;
-        decltype(res) expected{ "path" };
+        decltype(res) expected { "path" };
         split(test, res, '/');
         REQUIRE(std::size(res) == std::size(expected));
         REQUIRE(res == expected);
@@ -97,7 +97,15 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {
         std::string test { "path/" };
         std::vector<std::string> res;
-        decltype(res) expected{ "path" };
+        decltype(res) expected { "path" };
+        split(test, res, '/');
+        REQUIRE(std::size(res) == std::size(expected));
+        REQUIRE(res == expected);
+    }
+    {
+        std::string test { "path" };
+        std::vector<std::string> res;
+        decltype(res) expected { "path" };
         split(test, res, '/');
         REQUIRE(std::size(res) == std::size(expected));
         REQUIRE(res == expected);
@@ -105,7 +113,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {
         std::string test { "path1/path2" };
         std::vector<std::string> res;
-        decltype(res) expected{ "path1", "path2"};
+        decltype(res) expected { "path1", "path2" };
         split(test, res, '/');
         REQUIRE(std::size(res) == std::size(expected));
         REQUIRE(res == expected);

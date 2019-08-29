@@ -1,5 +1,26 @@
-#ifndef POINTERS_HPP_INCLUDED
-#define POINTERS_HPP_INCLUDED
+#pragma once
+/*------------------------------------------------------------------------------
+--  This file is a part of cpp_utils
+--  Copyright (C) 2019, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Alexis Jeandet
+--                     Mail : alexis.jeandet@lpp.polytechnique.fr
+--                            alexis.jeandet@member.fsf.org
+----------------------------------------------------------------------------*/
 
 #include <memory>
 #include <type_traits>
@@ -64,7 +85,8 @@ static inline constexpr bool is_std_weak_ptr_v = is_std_weak_ptr<T>::value;
 
 
 template <typename T>
-struct is_std_smart_ptr: std::disjunction<is_std_shared_ptr<T>, is_std_unique_ptr<T>, is_std_weak_ptr<T>>
+struct is_std_smart_ptr
+        : std::disjunction<is_std_shared_ptr<T>, is_std_unique_ptr<T>, is_std_weak_ptr<T>>
 {
 };
 
@@ -72,19 +94,55 @@ template <class T>
 static inline constexpr bool is_std_smart_ptr_v = is_std_smart_ptr<T>::value;
 
 template <typename T, typename = void>
-struct is_smart_ptr: std::false_type
+struct is_smart_ptr : std::false_type
 {
 };
 
 template <typename T>
-struct is_smart_ptr<T,std::enable_if_t<std::disjunction_v<is_std_smart_ptr<T>>>>: std::true_type
+struct is_smart_ptr<T, std::enable_if_t<std::disjunction_v<is_std_smart_ptr<T>>>> : std::true_type
 {
 };
 
-
-
 template <class T>
 static inline constexpr bool is_smart_ptr_v = is_smart_ptr<T>::value;
+
+template <typename T>
+constexpr auto to_value(T&& item)
+{
+    if constexpr (std::is_pointer_v<std::remove_reference_t<std::remove_cv_t<T>>>)
+    {
+        return *item;
+    }
+    else
+    {
+        if constexpr (is_smart_ptr_v<std::remove_reference_t<std::remove_cv_t<T>>>)
+        {
+            return *item.get();
+        }
+        else
+        {
+            return item;
+        }
+    }
 }
 
-#endif // POINTERS_HPP_INCLUDED
+template <typename T>
+constexpr auto& to_value_ref(T&& item)
+{
+    if constexpr (std::is_pointer_v<std::remove_reference_t<std::remove_cv_t<T>>>)
+    {
+        return *item;
+    }
+    else
+    {
+        if constexpr (is_smart_ptr_v<std::remove_reference_t<std::remove_cv_t<T>>>)
+        {
+            return *item.get();
+        }
+        else
+        {
+            return item;
+        }
+    }
+}
+}

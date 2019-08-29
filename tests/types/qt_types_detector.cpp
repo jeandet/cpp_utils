@@ -7,9 +7,8 @@
 #include <QTreeWidgetItem>
 #include <QWeakPointer>
 #include <catch2/catch.hpp>
-#include <trees.h>
 #include <types/pointers.hpp>
-#include <types/qt_types.hpp>
+#include <cpp_utils_qt/cpp_utils_qt.hpp>
 
 
 TEST_CASE("Qt types detector", "[types]")

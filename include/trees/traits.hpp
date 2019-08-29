@@ -22,27 +22,49 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include <cmath>
-#include <limits>
-#include <type_traits>
+#include "../types/detectors.hpp"
+
 #include <algorithm>
 
-namespace SciQLop::numeric {
-
-/*
- taken from here https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
-*/
-template<class T>
-typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
-    almost_equal(T x, T y, int ulp=1)
+namespace cpp_utils::trees
 {
-    // the machine epsilon has to be scaled to the magnitude of the values used
-    // and multiplied by the desired precision in ULPs (units in the last place)
-    return std::abs(x-y) <= std::numeric_limits<T>::epsilon() * std::abs(x+y) * ulp
-    // unless the result is subnormal
-           || std::abs(x-y) < std::numeric_limits<T>::min();
+using namespace cpp_utils::types::detectors;
+
+
+
+
+namespace
+{
+    HAS_MEMBER(name)
+    HAS_METHOD(has_name_method, name)
+    HAS_METHOD(has_text_method, text)
+};
+
+template <typename T>
+std::string _get_name(const T& item)
+{
+    if constexpr (has_name_method_v<T>)
+    {
+        return _get_name(item.name());
+    }
+    else if constexpr (has_text_method_v<T>)
+    {
+        return _get_name(item.text(0));
+    }
+    else if constexpr (has_toStdString_method_v<T>)
+    {
+        return _get_name(item.toStdString());
+    }
+    else if constexpr (has_name_member_object_v<T>)
+    {
+        return to_std_string(item.name);
+    }
+    else
+    {
+        return item;
+    }
 }
 
+
+
 }
-
-

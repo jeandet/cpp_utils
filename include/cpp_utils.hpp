@@ -1,5 +1,26 @@
-#ifndef CPP_UTILS_H
-#define CPP_UTILS_H
+#pragma once
+/*------------------------------------------------------------------------------
+--  This file is a part of cpp_utils
+--  Copyright (C) 2019, Plasma Physics Laboratory - CNRS
+--
+--  This program is free software; you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation; either version 2 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program; if not, write to the Free Software
+--  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+-------------------------------------------------------------------------------*/
+/*--                  Author : Alexis Jeandet
+--                     Mail : alexis.jeandet@lpp.polytechnique.fr
+--                            alexis.jeandet@member.fsf.org
+----------------------------------------------------------------------------*/
 
 #include "types/detectors.hpp"
 #include "types/pointers.hpp"
@@ -23,27 +44,7 @@ template < typename T > constexpr T diff (const std::pair < T, T > &p)
   return p.second - p.first;
 }
 
-template < typename T > constexpr auto const &
-to_value (const T & item)
-{
-  if constexpr
-    (std::is_pointer_v < std::remove_reference_t < std::remove_cv_t < T >>>)
-    {
-      return *item;
-    }
-  else
-    {
-      if constexpr
-	(cpp_utils::types::pointers::is_smart_ptr_v < T >)
-	{
-	  return *item.get ();
-	}
-      else
-	{
-	  return item;
-	}
-    }
-}
+
 
 template < typename T > auto repeat_n (T func, int number)->
 decltype (func (), void ())
@@ -83,4 +84,3 @@ template < typename T > std::string to_std_string (const T & text)
     }
 }
 
-#endif // CPP_UTILS_H

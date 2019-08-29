@@ -21,8 +21,7 @@
 --                     Mail : alexis.jeandet@lpp.polytechnique.fr
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-
-#include "pointers.hpp"
+#include "../../types/pointers.hpp"
 #include <QExplicitlySharedDataPointer>
 #include <QScopedArrayPointer>
 #include <QScopedPointer>
