@@ -24,6 +24,8 @@ using namespace cpp_utils::containers;
 
 TEST_CASE("Containers algorithms", "[Containers]")
 {
+#define SINGLE_ARG(...) __VA_ARGS__
+    
 #define associative_init                                                                           \
     {                                                                                              \
         { 1., 'a' }, { 2., 'b' }, { 3., 'c' }                                                      \
@@ -46,6 +48,16 @@ TEST_CASE("Containers algorithms", "[Containers]")
         REQUIRE(index_of(type, 1111.) == std::size(type));                                         \
     }
 
+    
+#define TEST_SPLIT(value, expected_value)\
+    {\
+        std::string test value;\
+        std::vector<std::string> res;\
+        decltype(res) expected expected_value;\
+        split(test, res, '/');\
+        REQUIRE(std::size(res) == std::size(expected));\
+        REQUIRE(res == expected);\
+    }
 
     TEST_CONTAINER_CONTAINS(list, default_init)
     TEST_CONTAINER_CONTAINS(vector, default_init)
@@ -62,60 +74,14 @@ TEST_CASE("Containers algorithms", "[Containers]")
 
     TEST_CONTAINER_CONTAINS(map, associative_init, char)
 
-    {
-        std::string test { "/part1/part2/part3" };
-        std::vector<std::string> res;
-        decltype(res) expected { "part1", "part2", "part3" };
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
-    {
-        std::string test { "" };
-        std::vector<std::string> res;
-        decltype(res) expected {};
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
-    {
-        std::string test { "///////" };
-        std::vector<std::string> res;
-        decltype(res) expected {};
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
-    {
-        std::string test { "/path/" };
-        std::vector<std::string> res;
-        decltype(res) expected { "path" };
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
-    {
-        std::string test { "path/" };
-        std::vector<std::string> res;
-        decltype(res) expected { "path" };
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
-    {
-        std::string test { "path" };
-        std::vector<std::string> res;
-        decltype(res) expected { "path" };
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
-    {
-        std::string test { "path1/path2" };
-        std::vector<std::string> res;
-        decltype(res) expected { "path1", "path2" };
-        split(test, res, '/');
-        REQUIRE(std::size(res) == std::size(expected));
-        REQUIRE(res == expected);
-    }
+    
+    TEST_SPLIT({ "/part1/part2/part3" }, SINGLE_ARG({ "part1", "part2", "part3" }));
+    TEST_SPLIT({ "" }, SINGLE_ARG({}));
+    TEST_SPLIT({ "///////" }, SINGLE_ARG({}));
+    TEST_SPLIT({ "/path/" }, SINGLE_ARG({ "path"}));
+    TEST_SPLIT({ "/path" }, SINGLE_ARG({ "path"}));
+    TEST_SPLIT({ "path/" }, SINGLE_ARG({ "path"}));
+    TEST_SPLIT({ "path" }, SINGLE_ARG({ "path"}));
+    TEST_SPLIT({ "path1/path2" }, SINGLE_ARG({ "path1", "path2"}));
+    
 }
