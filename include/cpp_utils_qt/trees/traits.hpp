@@ -22,26 +22,45 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include <QTreeWidgetItem>
 #include "../../trees/node.hpp"
+#include <QTreeWidgetItem>
 
 namespace cpp_utils::trees
 {
-    template<>
-    inline auto& child<QTreeWidgetItem>(QTreeWidgetItem&& node, int index)
-    {
-        return *node.child(index);
-    }
-    
-    template<>
-    std::size_t inline children_count<QTreeWidgetItem>(QTreeWidgetItem&& node)
-    {
-        return node.childCount();
-    }
-    
-    template<>
-    auto inline name<QTreeWidgetItem>(QTreeWidgetItem&& node)
-    {
-        return node.text(0);
-    }
+template <>
+inline auto& child<QTreeWidgetItem&>(QTreeWidgetItem& node, int index)
+{
+    return *node.child(index);
+}
+
+template <>
+inline auto& child<QTreeWidgetItem&&>(QTreeWidgetItem&& node, int index)
+{
+    return *node.child(index);
+}
+
+template <>
+std::size_t inline children_count<QTreeWidgetItem&>(QTreeWidgetItem& node)
+{
+    return node.childCount();
+}
+
+template <>
+std::size_t inline children_count<QTreeWidgetItem&&>(QTreeWidgetItem&& node)
+{
+    return node.childCount();
+}
+
+template <>
+auto inline name<QTreeWidgetItem&>(QTreeWidgetItem& node)
+{
+    return node.text(0);
+}
+
+template <>
+auto inline name<QTreeWidgetItem&&>(QTreeWidgetItem&& node)
+{
+    return node.text(0);
+}
+
 }

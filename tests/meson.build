@@ -14,6 +14,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TreePrintQt',
+        'sources': ['trees/test_print_qt.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep, qt5_dep]
+    },
+    {
         'name':'TestMemberDetector',
         'sources': ['types/member_detector.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

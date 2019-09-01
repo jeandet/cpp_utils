@@ -6,6 +6,7 @@
 #include <QString>
 #include <QTreeWidgetItem>
 #include <QWeakPointer>
+#include <QTreeWidgetItem>
 #include <catch2/catch.hpp>
 #include <types/pointers.hpp>
 #include <cpp_utils_qt/cpp_utils_qt.hpp>
@@ -52,4 +53,10 @@ TEST_CASE("Qt types detector", "[types]")
     PTR_TEST(QExplicitlySharedDataPointer)
     PTR_TEST(QScopedPointer)
     PTR_TEST(QScopedArrayPointer)
+    
+    //TODO move this later
+    auto item = new QTreeWidgetItem;
+    item->setText(0,"name");
+    REQUIRE(name(to_value_ref(item))=="name");
+    REQUIRE(std::is_same_v<decltype(to_value_ref(item)),QTreeWidgetItem&>);
 }

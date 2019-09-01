@@ -85,7 +85,7 @@ struct is_QWeakPointer : std::false_type
 };
 
 template <typename T>
-struct is_QWeakPointer<T, decltype(void())>
+struct is_QWeakPointer<T, decltype(std::declval<T>().data(), void())>
         : std::is_same<T, QWeakPointer<std::remove_pointer_t<decltype(std::declval<T>().data())>>>
 {
 };
@@ -99,7 +99,7 @@ struct is_QScopedArrayPointer : std::false_type
 };
 
 template <typename T>
-struct is_QScopedArrayPointer<T, decltype(void())>
+struct is_QScopedArrayPointer<T, decltype(std::declval<T>().data(), void())>
         : std::is_same<T,
               QScopedArrayPointer<std::remove_pointer_t<decltype(std::declval<T>().data())>>>
 {
@@ -115,7 +115,7 @@ struct is_QScopedPointer : std::false_type
 };
 
 template <typename T>
-struct is_QScopedPointer<T, decltype(void())>
+struct is_QScopedPointer<T, decltype(std::declval<T>().data(), void())>
         : std::is_same<T, QScopedPointer<std::remove_pointer_t<decltype(std::declval<T>().data())>>>
 {
 };
