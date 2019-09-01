@@ -80,32 +80,6 @@ namespace StringUtils
     return newName;
   }
 
-  template<typename container>
-  QString join(const container& input, const char* sep)
-  {
-    QStringList list;
-    if constexpr(std::is_same_v<typename container::value_type, std::string>)
-    {
-      std::transform(
-          std::cbegin(input), std::cend(input), std::back_inserter(list),
-          [](const auto& item) { return QString::fromStdString(item); });
-    }
-    else if constexpr(std::is_same_v<typename container::value_type, QString>)
-    {
-      std::copy(std::cbegin(input), std::cend(input), std::back_inserter(list));
-    }
-    return list.join(sep);
-  }
-
-  template<typename container>
-  QString join(const container& input, const char* sep,
-               std::function<QString(typename container::value_type)> op)
-  {
-    QStringList list;
-    std::transform(std::cbegin(input), std::cend(input),
-                   std::back_inserter(list), op);
-    return list.join(sep);
-  }
 } // namespace StringUtils
 
 

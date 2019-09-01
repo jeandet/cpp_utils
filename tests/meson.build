@@ -52,7 +52,13 @@ tests = [
         'name':'TestContainersAlgs',
         'sources': ['containers/test_containers_algs.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
+        'name':'TestStringsAlgs',
+        'sources': ['strings/test_strings_algorithms.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
     }
+    
 ]
 
 foreach unit_test : tests

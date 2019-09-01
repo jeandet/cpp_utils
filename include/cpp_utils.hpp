@@ -70,17 +70,4 @@ operator* (int number, const std::function < void (void) > &func)
   return number;
 }
 
-template < typename T > std::string to_std_string (const T & text)
-{
-  if constexpr
-    (std::is_same_v < std::string, T >)
-    {
-      return text;
-    }
-  else if constexpr
-    (cpp_utils::types::detectors::has_toStdString_method_v < T >)
-    {
-      return text.toStdString ();
-    }
-}
 

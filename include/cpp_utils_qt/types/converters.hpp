@@ -27,9 +27,18 @@
 namespace cpp_utils::types::strings
 {
     
-    template<>
-    std::string inline to_std_string<QString>(QString&& object)
+    template<typename str_t, typename T>
+    inline typename std::enable_if_t<std::is_same_v<str_t, QString>, QString> to_string(const T& object)
     {
-        return object.toStdString();
+        return QString("%1").arg(object);
     }
 }
+
+namespace std 
+{
+    std::string to_string(const QString& str)
+    {
+        return str.toStdString();
+    }
+}
+

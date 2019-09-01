@@ -21,50 +21,28 @@
 --                     Mail : alexis.jeandet@lpp.polytechnique.fr
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include "../containers/algorithms.hpp"
+#include "../types/strings.hpp"
 
-#include "../types/detectors.hpp"
-
-#include <algorithm>
-
-namespace cpp_utils::trees
+namespace cpp_utils::strings
 {
-using namespace cpp_utils::types::detectors;
-
-
-
-
-namespace
+template <typename string_t, template <typename val_t, typename...> class list_t>
+auto make_unique_name(const string_t& base_name, const list_t<string_t>& blacklist)
 {
-    HAS_MEMBER(name)
-    HAS_METHOD(has_name_method, name)
-    HAS_METHOD(has_text_method, text)
-};
-
-template <typename T>
-std::string _get_name(const T& item)
-{
-    if constexpr (has_name_method_v<T>)
+    using namespace cpp_utils;
+    if (containers::contains(blacklist, base_name))
     {
-        return _get_name(item.name());
-    }
-    else if constexpr (has_text_method_v<T>)
-    {
-        return _get_name(item.text(0));
-    }
-    else if constexpr (has_toStdString_method_v<T>)
-    {
-        return _get_name(item.toStdString());
-    }
-    else if constexpr (has_name_member_object_v<T>)
-    {
-        return std::to_string(item.name);
+        int i = 1;
+        string_t name;
+        do
+        {
+            name = base_name + types::strings::to_string<string_t>(i++);
+        } while (containers::contains(blacklist, name));
+        return name;
     }
     else
     {
-        return item;
+        return base_name;
     }
 }
-
-
-
 }

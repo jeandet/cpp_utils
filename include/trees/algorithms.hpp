@@ -52,7 +52,7 @@ namespace details
                 indent_lvl);
             ostream << "├";
             repeat_n([&ostream]() { ostream << "─"; }, indent_increment - 1);
-            ostream << " " << to_std_string(name(child_node)) << std::endl;
+            ostream << " " << std::to_string(name(child_node)) << std::endl;
             _print_tree(child_node, indent_increment, indent_lvl + 1, ostream);
         }
     }
@@ -64,7 +64,7 @@ void print_tree(T&& tree, U& ostream = std::cout)
 {
     using namespace cpp_utils::types::strings;
     using namespace cpp_utils::types::pointers;
-    ostream << to_std_string(name(to_value_ref(tree))) << std::endl;
+    ostream << std::to_string(name(to_value_ref(tree))) << std::endl;
     details::_print_tree(to_value_ref(tree), indent_increment, 0, ostream);
 }
 

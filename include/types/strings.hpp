@@ -26,12 +26,25 @@
 
 namespace cpp_utils::types::strings
 {
-    IS_T(is_std_string, std::string);
-    
-    template<typename str_t>
-    std::string inline to_std_string(str_t&& object)
-    {
-        static_assert(is_std_string_v<str_t>,"");
-        return object;
-    }
+IS_T(is_std_string, std::string);
+
+template <typename str_t, typename T>
+inline typename std::enable_if_t<is_std_string_v<str_t>, std::string> to_string(const T& object)
+{
+    return std::to_string(object);
+}
+
+
+}
+
+namespace std
+{
+std::string to_string(const std::string& str)
+{
+    return str;
+}
+std::string to_string(std::string&& str)
+{
+    return std::move(str);
+}
 }
