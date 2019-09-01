@@ -22,9 +22,9 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
+#include "../containers/traits.hpp"
 #include "../cpp_utils.hpp"
 #include "../types/detectors.hpp"
-#include "../containers/traits.hpp"
 #include <algorithm>
 #include <string>
 
@@ -65,7 +65,8 @@ auto index_of(const T1& container, const T2& value)
 }
 
 template <class input_t, template <typename val_t, typename...> class output_t, typename value_t>
-auto split(const input_t& input, output_t<input_t>& output, const value_t& splitVal) -> decltype(void())
+auto split(const input_t& input, output_t<input_t>& output, const value_t& splitVal)
+    -> decltype(void())
 {
     static_assert(is_container_v<input_t>, "");
     static_assert(is_container_v<output_t<input_t>>, "");
@@ -90,6 +91,29 @@ auto split(const input_t& input, output_t<input_t>& output, const value_t& split
     }
     if (std::size(chunk))
         output.push_back(std::move(chunk));
+}
+
+template <class input_t, class item_t>
+auto join(const input_t& input, const item_t& sep)
+{
+    std::remove_cv_t<std::remove_reference_t<decltype(input[0])>> result;
+    if (std::size(input))
+    {
+        auto result_size = std::accumulate(std::cbegin(input), std::cend(input), 0UL,
+            [](const auto& size, const auto& item) { return size + std::size(item); });
+        result_size += std::size(input) - 1;
+        result.reserve(result_size);
+        if (std::size(input) > 1)
+        {
+            std::for_each(
+                std::cbegin(input), std::cend(input) - 1, [&result, &sep](const auto& item) {
+                    std::copy(std::cbegin(item), std::cend(item), std::back_inserter(result));
+                    result.push_back(sep);
+                });
+        }
+        std::copy(std::cbegin(input.back()), std::cend(input.back()), std::back_inserter(result));
+    }
+    return result;
 }
 
 } //

@@ -27,7 +27,7 @@
 #include <type_traits>
 #include <algorithm>
 
-namespace SciQLop::numeric {
+namespace cpp_utils::numeric {
 
 /*
  taken from here https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
