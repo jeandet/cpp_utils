@@ -24,7 +24,7 @@ using namespace cpp_utils::containers;
 
 TEST_CASE("Containers algorithms", "[Containers]")
 {
-#define SINGLE_ARG(...) __VA_ARGS__
+#define ARG(...) __VA_ARGS__
 
 #define associative_init                                                                           \
     {                                                                                              \
@@ -48,25 +48,34 @@ TEST_CASE("Containers algorithms", "[Containers]")
         REQUIRE(index_of(type, 1111.) == std::size(type));                                         \
     }
 
+#define TEST_SPLIT_T(value_type, value, expected_value_type, expected_value, sep)                  \
+    {                                                                                              \
+        value_type test value;                                                                     \
+        expected_value_type res;                                                                   \
+        expected_value_type expected expected_value;                                               \
+        split(test, res, sep);                                                                     \
+        REQUIRE(std::size(res) == std::size(expected));                                            \
+        REQUIRE(res == expected);                                                                  \
+    }
 
 #define TEST_SPLIT(value, expected_value)                                                          \
+    TEST_SPLIT_T(                                                                                  \
+        ARG(std::string), ARG(value), ARG(std::vector<std::string>), ARG(expected_value), '/')
+
+
+#define TEST_JOIN_T(value_type, value, expected_value_type, expected_value, sep)                   \
     {                                                                                              \
-        std::string test value;                                                                    \
-        std::vector<std::string> res;                                                              \
-        decltype(res) expected expected_value;                                                     \
-        split(test, res, '/');                                                                     \
+        value_type test value;                                                                     \
+        expected_value_type expected expected_value;                                               \
+        auto res = join(test, sep);                                                                \
         REQUIRE(std::size(res) == std::size(expected));                                            \
         REQUIRE(res == expected);                                                                  \
     }
 
+
 #define TEST_JOIN(value, expected_value)                                                           \
-    {                                                                                              \
-        std::vector<std::string> test value;                                                       \
-        std::string expected expected_value;                                                       \
-        auto res = join(test, '/');                                                                \
-        REQUIRE(std::size(res) == std::size(expected));                                            \
-        REQUIRE(res == expected);                                                                  \
-    }
+    TEST_JOIN_T(                                                                                   \
+        ARG(std::vector<std::string>), ARG(value), ARG(std::string), ARG(expected_value), '/')
 
     TEST_CONTAINER_CONTAINS(list, default_init)
     TEST_CONTAINER_CONTAINS(vector, default_init)
@@ -84,17 +93,23 @@ TEST_CASE("Containers algorithms", "[Containers]")
     TEST_CONTAINER_CONTAINS(map, associative_init, char)
 
 
-    TEST_SPLIT({ "/part1/part2/part3" }, SINGLE_ARG({ "part1", "part2", "part3" }));
-    TEST_SPLIT({ "" }, SINGLE_ARG({}));
-    TEST_SPLIT({ "///////" }, SINGLE_ARG({}));
-    TEST_SPLIT({ "/path/" }, SINGLE_ARG({ "path" }));
-    TEST_SPLIT({ "/path" }, SINGLE_ARG({ "path" }));
-    TEST_SPLIT({ "path/" }, SINGLE_ARG({ "path" }));
-    TEST_SPLIT({ "path" }, SINGLE_ARG({ "path" }));
-    TEST_SPLIT({ "path1/path2" }, SINGLE_ARG({ "path1", "path2" }));
+    TEST_SPLIT({ "/part1/part2/part3" }, ARG({ "part1", "part2", "part3" }));
+    TEST_SPLIT({ "" }, ARG({}));
+    TEST_SPLIT({ "///////" }, ARG({}));
+    TEST_SPLIT({ "/path/" }, ARG({ "path" }));
+    TEST_SPLIT({ "/path" }, ARG({ "path" }));
+    TEST_SPLIT({ "path/" }, ARG({ "path" }));
+    TEST_SPLIT({ "path" }, ARG({ "path" }));
+    TEST_SPLIT({ "path1/path2" }, ARG({ "path1", "path2" }));
 
-    TEST_JOIN(SINGLE_ARG({ "part1", "part2", "part3" }), {"part1/part2/part3"})
-    TEST_JOIN(SINGLE_ARG({}), {""})
-    TEST_JOIN(SINGLE_ARG({ "part"}), {"part"})
-    TEST_JOIN(SINGLE_ARG({ "part1", "part2"}), {"part1/part2"})
+    TEST_SPLIT_T(ARG(std::vector<int>), ARG({ 1, 2, 3, 4, 5, 6 }), ARG(std::list<std::vector<int>>),
+        ARG({ { 1, 2, 3 }, { 5, 6 } }), 4)
+
+    TEST_JOIN(ARG({ "part1", "part2", "part3" }), { "part1/part2/part3" })
+    TEST_JOIN(ARG({}), { "" })
+    TEST_JOIN(ARG({ "part" }), { "part" })
+    TEST_JOIN(ARG({ "part1", "part2" }), { "part1/part2" })
+
+    TEST_JOIN_T(ARG(std::list<std::vector<int>>), ARG({ { 1, 2, 3 }, { 5, 6 } }),
+        ARG(std::vector<int>), ARG({ 1, 2, 3, 4, 5, 6 }), 4)
 }

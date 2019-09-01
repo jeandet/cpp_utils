@@ -96,7 +96,7 @@ auto split(const input_t& input, output_t<input_t>& output, const value_t& split
 template <class input_t, class item_t>
 auto join(const input_t& input, const item_t& sep)
 {
-    std::remove_cv_t<std::remove_reference_t<decltype(input[0])>> result;
+    std::remove_cv_t<std::remove_reference_t<decltype(input.front())>> result;
     if (std::size(input))
     {
         auto result_size = std::accumulate(std::cbegin(input), std::cend(input), 0UL,
@@ -106,7 +106,7 @@ auto join(const input_t& input, const item_t& sep)
         if (std::size(input) > 1)
         {
             std::for_each(
-                std::cbegin(input), std::cend(input) - 1, [&result, &sep](const auto& item) {
+                std::cbegin(input), --std::cend(input), [&result, &sep](const auto& item) {
                     std::copy(std::cbegin(item), std::cend(item), std::back_inserter(result));
                     result.push_back(sep);
                 });
