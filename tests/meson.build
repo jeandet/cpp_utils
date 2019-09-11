@@ -49,6 +49,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestQtContainersTraits',
+        'sources': ['containers/test_containers_traits_qt.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep, qt5_dep]
+    },
+    {
         'name':'TestContainersAlgs',
         'sources': ['containers/test_containers_algs.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

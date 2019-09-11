@@ -97,7 +97,7 @@ inline constexpr bool _is_container()
     static_assert(_is_std_container | has_cend_method_v<T>, "");
     static_assert(_is_std_container | has_swap_method_v<T>, "");
     static_assert(_is_std_container | has_size_method_v<T>, "");
-    static_assert(_is_std_container | has_max_size_method_v<T>, "");
+    //static_assert(_is_std_container | has_max_size_method_v<T>, "");
     static_assert(_is_std_container | has_empty_method_v<T>, "");
     return true;
 }
@@ -109,7 +109,7 @@ struct is_container
                   has_const_reference_type<T>, has_iterator_type<T>, has_const_iterator_type<T>,
                   has_difference_type_type<T>, has_size_type_type<T>, has_begin_method<T>,
                   has_end_method<T>, has_cbegin_method<T>, has_cend_method<T>, has_swap_method<T>,
-                  has_size_method<T>, has_max_size_method<T>, has_empty_method<T>>,
+                  has_size_method<T>/**, has_max_size_method<T>**/, has_empty_method<T>>,
               is_std_list<T>, is_std_forward_list<T>>
 {
 };
