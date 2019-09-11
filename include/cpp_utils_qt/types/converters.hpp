@@ -36,7 +36,7 @@ namespace cpp_utils::types::strings
 
 namespace std 
 {
-    std::string to_string(const QString& str)
+    inline std::string to_string(const QString& str)
     {
         return str.toStdString();
     }
