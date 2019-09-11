@@ -26,6 +26,7 @@
 #include "../cpp_utils.hpp"
 #include "../types/detectors.hpp"
 #include <algorithm>
+#include <numeric>
 #include <string>
 
 namespace cpp_utils::containers
@@ -47,7 +48,7 @@ auto contains(const T1& container, const T2& value)
 }
 
 template <class T1, class T2>
-auto index_of(const T1& container, const T2& value) -> decltype(0)
+auto index_of(const T1& container, const T2& value) -> decltype(*std::cbegin(std::declval<T1>())==std::declval<T2>(), 0)
 {
     static_assert(is_sequence_container_v<T1>, "");
     return std::distance(
