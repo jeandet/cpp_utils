@@ -23,8 +23,8 @@
 ----------------------------------------------------------------------------*/
 
 #include "../../trees/node.hpp"
+#if __has_include(<QTreeWidgetItem>)
 #include <QTreeWidgetItem>
-
 namespace cpp_utils::trees
 {
 template <>
@@ -64,3 +64,4 @@ auto inline name<QTreeWidgetItem&&>(QTreeWidgetItem&& node)
 }
 
 }
+#endif
