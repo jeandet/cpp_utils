@@ -70,5 +70,5 @@ foreach unit_test : tests
   test_exe = executable(unit_test['name'],unit_test['sources'],
                           dependencies : unit_test['deps']
 						  )
-  test('Test-' + unit_test['name'], test_exe)
+  test('Test-' + unit_test['name'], test_exe, args:['-o','@0@_out.xml'.format(unit_test['name']), '-r', 'xml'])
 endforeach
