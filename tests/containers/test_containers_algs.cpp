@@ -45,7 +45,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {                                                                                              \
         std::type<double, ##__VA_ARGS__> type init;                                                \
         REQUIRE(index_of(type, 2.) == 1);                                                          \
-        REQUIRE(index_of(type, 1111.) == std::size(type));                                         \
+        REQUIRE(index_of(type, 1111.) == static_cast<int>(std::size(type)));                                         \
     }
 
 #define TEST_SPLIT_T(value_type, value, expected_value_type, expected_value, sep)                  \
