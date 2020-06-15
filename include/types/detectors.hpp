@@ -125,6 +125,15 @@ struct is_qt_tree_item<T,
 template <class T>
 static inline constexpr bool is_qt_tree_item_v = is_qt_tree_item<T>::value;
 
+template <typename ref_type, typename... types>
+struct is_any_of : std::integral_constant<bool,(std::is_same_v<ref_type, types> || ...)>{};
+
+template <typename ref_type, typename... types>
+using is_any_of_t = typename is_any_of<ref_type,types...>::type;
+
+template <typename ref_type, typename... types>
+inline constexpr bool is_any_of_v = is_any_of<ref_type,types...>::value;
+
 
 HAS_METHOD(has_toStdString_method, toStdString)
 }

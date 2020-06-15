@@ -48,4 +48,10 @@ TEST_CASE( "Member detector", "[types]" ) {
     REQUIRE(!is_TestStruc_v<int>);
     REQUIRE(is_std_vector_v<std::vector<int>>);
     REQUIRE(!is_std_vector_v<int>);
+
+    using namespace cpp_utils::types::detectors;
+    REQUIRE(std::is_same_v<is_any_of_t<int, char, double>,std::false_type>);
+    REQUIRE(std::is_same_v<is_any_of_t<int, char,int, double>,std::true_type>);
+    REQUIRE(!is_any_of_v<int, char, double>);
+    REQUIRE(is_any_of_v<int, char,int, double>);
 }
