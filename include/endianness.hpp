@@ -100,6 +100,13 @@ namespace details
     }
 }
 
+enum class Endianness
+{
+    unknown,
+    big,
+    little
+};
+
 struct big_endian_t
 {
 };
@@ -114,6 +121,15 @@ inline constexpr bool is_little_endian_v = std::is_same_v<little_endian_t, endia
 
 template <typename endianness_t>
 inline constexpr bool is_big_endian_v = std::is_same_v<big_endian_t, endianness_t>;
+
+inline Endianness host_endianness_v()
+{
+    if constexpr (is_little_endian_v<host_endianness_t>)
+            return Endianness::little;
+    if constexpr (is_big_endian_v<host_endianness_t>)
+            return Endianness::big;
+    return Endianness::unknown;
+}
 
 
 template <typename src_endianess_t, typename T, typename U>
