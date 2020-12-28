@@ -1,0 +1,2 @@
+#cmakedefine CPP_UTILS_BIG_ENDIAN
+#cmakedefine CPP_UTILS_LITTLE_ENDIAN

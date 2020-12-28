@@ -62,6 +62,11 @@ tests = [
         'name':'TestStringsAlgs',
         'sources': ['strings/test_strings_algorithms.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
+        'name':'TestEndianness',
+        'sources': ['endianness/test_endianness.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
     }
     
 ]
