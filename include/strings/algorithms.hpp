@@ -26,6 +26,51 @@
 
 namespace cpp_utils::strings
 {
+
+// https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+static inline std::string& ltrim(std::string& s)
+{
+    s.erase(s.begin(),
+        std::find_if(s.begin(), s.end(), [](unsigned char ch) { return !std::isspace(ch); }));
+    return s;
+}
+
+static inline std::string ltrim(const std::string& s)
+{
+    auto copy = s;
+    copy.erase(copy.begin(),
+        std::find_if(copy.begin(), copy.end(), [](unsigned char ch) { return !std::isspace(ch); }));
+    return copy;
+}
+
+static inline std::string& rtrim(std::string& s)
+{
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); })
+                .base(),
+        s.end());
+    return s;
+}
+
+static inline std::string rtrim(const std::string& s)
+{
+    auto copy = s;
+    copy.erase(std::find_if(copy.rbegin(), copy.rend(), [](unsigned char ch) { return !std::isspace(ch); })
+                .base(),
+        copy.end());
+    return copy;
+}
+
+// trim from both ends (in place)
+static inline std::string& trim(std::string& s)
+{
+    return rtrim(ltrim(s));
+}
+
+static inline std::string trim(const std::string& s)
+{
+    return rtrim(ltrim(s));
+}
+
 template <typename string_t, template <typename val_t, typename...> class list_t>
 auto make_unique_name(const string_t& base_name, const list_t<string_t>& blacklist)
 {

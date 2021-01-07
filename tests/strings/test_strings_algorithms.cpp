@@ -8,4 +8,11 @@ TEST_CASE("Strings algorithms", "[strings]")
     using namespace cpp_utils::strings;
     REQUIRE(std::string("test") == make_unique_name(std::string("test"),std::vector<std::string>{"test0","test1"}));
     REQUIRE(std::string("test1") == make_unique_name(std::string("test"),std::vector<std::string>{"test","test2"}));
+
+    REQUIRE(std::string("test1") == trim(std::string("      test1     ")));
+    REQUIRE(std::string("test1") == trim(std::string("test1     ")));
+    REQUIRE(std::string("test1") == trim(std::string("      test1")));
+    REQUIRE(std::string("test1") == trim(std::string("test1")));
+    REQUIRE(std::string("") == trim(std::string("    ")));
+    REQUIRE(std::string("") == trim(std::string("")));
 }
