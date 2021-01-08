@@ -172,7 +172,7 @@ inline std::enable_if_t<std::is_same_v<unsigned char, T> or std::is_same_v<char,
 {
     auto size = count * sizeof(value_t);
     return decode<dest_endianess_t>(
-        reinterpret_cast<char*>(input), size, reinterpret_cast<value_t*>(output));
+        reinterpret_cast<const char*>(input), size, reinterpret_cast<value_t*>(output));
 }
 
 }
