@@ -27,6 +27,7 @@
 #include "../types/detectors.hpp"
 #include <algorithm>
 #include <numeric>
+#include <optional>
 #include <string>
 
 namespace cpp_utils::containers
@@ -48,7 +49,8 @@ auto contains(const T1& container, const T2& value)
 }
 
 template <class T1, class T2>
-auto index_of(const T1& container, const T2& value) -> decltype(*std::cbegin(std::declval<T1>())==std::declval<T2>(), 0)
+auto index_of(const T1& container, const T2& value)
+    -> decltype(*std::cbegin(std::declval<T1>()) == std::declval<T2>(), 0)
 {
     static_assert(is_sequence_container_v<T1>, "");
     return std::distance(
@@ -106,8 +108,9 @@ auto join(const input_t& input, const item_t& sep)
         result.reserve(result_size);
         if (std::size(input) > 1)
         {
-            std::for_each(
-                std::cbegin(input), --std::cend(input), [&result, &sep](const auto& item) {
+            std::for_each(std::cbegin(input), --std::cend(input),
+                [&result, &sep](const auto& item)
+                {
                     std::copy(std::cbegin(item), std::cend(item), std::back_inserter(result));
                     result.push_back(sep);
                 });
@@ -116,5 +119,24 @@ auto join(const input_t& input, const item_t& sep)
     }
     return result;
 }
+
+template <typename T>
+auto min(const T& v) -> decltype(std::cbegin(v), std::cend(v), std::optional { v[0] })
+{
+    if (std::size(v))
+        return *std::min_element(std::cbegin(v), std::cend(v));
+    else
+        return std::nullopt;
+}
+
+template <typename T>
+auto max(const T& v) -> decltype(std::cbegin(v), std::cend(v), std::optional { v[0] })
+{
+    if (std::size(v))
+        return *std::max_element(std::cbegin(v), std::cend(v));
+    else
+        return std::nullopt;
+}
+
 
 } //

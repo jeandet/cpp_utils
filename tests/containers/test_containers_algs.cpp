@@ -112,4 +112,10 @@ TEST_CASE("Containers algorithms", "[Containers]")
 
     TEST_JOIN_T(ARG(std::list<std::vector<int>>), ARG({ { 1, 2, 3 }, { 5, 6 } }),
         ARG(std::vector<int>), ARG({ 1, 2, 3, 4, 5, 6 }), 4)
+
+
+    REQUIRE(*min(std::vector{1,2,3})==1);
+    REQUIRE(*max(std::vector{1,2,3})==3);
+    REQUIRE(min(std::vector<int>{})==std::nullopt);
+    REQUIRE(max(std::vector<int>{})==std::nullopt);
 }
