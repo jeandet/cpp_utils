@@ -6,7 +6,7 @@ project(
 
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 
-cpp_utils_inc = include_directories(['include','.'])
+cpp_utils_inc = include_directories(['include', '.', 'include/cpp_utils'])
 
 cpp_utils_dep = declare_dependency(
         include_directories : cpp_utils_inc,
@@ -38,22 +38,22 @@ endif
 
 library('🔨', extra_files:
     [
-        'include/containers/algorithms.hpp',
-        'include/cpp_utils_qt/cpp_utils_qt.hpp',
-        'include/cpp_utils_qt/types/pointers.hpp',
-        'include/trees/algorithms.hpp',
-        'include/types/detectors.hpp',
-        'include/types/strings.hpp',
-        'include/containers/traits.hpp',
-        'include/cpp_utils_qt/trees/traits.hpp',
-        'include/endianness.hpp',
-        'include/trees/node.hpp',
-        'include/types/pointers.hpp',
-        'include/cpp_utils.hpp',
-        'include/cpp_utils_qt/types/converters.hpp',
-        'include/strings/algorithms.hpp',
-        'include/trees/traits.hpp',
-        'include/types/qt_types.hpp'
+        'include/cpp_utils/containers/algorithms.hpp',
+        'include/cpp_utils/cpp_utils_qt/cpp_utils_qt.hpp',
+        'include/cpp_utils/cpp_utils_qt/types/pointers.hpp',
+        'include/cpp_utils/trees/algorithms.hpp',
+        'include/cpp_utils/types/detectors.hpp',
+        'include/cpp_utils/types/strings.hpp',
+        'include/cpp_utils/containers/traits.hpp',
+        'include/cpp_utils/cpp_utils_qt/trees/traits.hpp',
+        'include/cpp_utils/endianness.hpp',
+        'include/cpp_utils/trees/node.hpp',
+        'include/cpp_utils/types/pointers.hpp',
+        'include/cpp_utils/cpp_utils.hpp',
+        'include/cpp_utils/cpp_utils_qt/types/converters.hpp',
+        'include/cpp_utils/strings/algorithms.hpp',
+        'include/cpp_utils/trees/traits.hpp',
+        'include/cpp_utils/types/qt_types.hpp'
     ])
 
 subdir('tests')

@@ -19,6 +19,14 @@ std::size_t size(const std::forward_list<T>& list)
 }
 }
 
+struct TestBroadcast
+{
+    static int result;
+    void add(int value) const { result += value; }
+    void increment(int& value) { value++; }
+};
+
+int TestBroadcast::result = 0;
 
 using namespace cpp_utils::containers;
 
@@ -45,7 +53,7 @@ TEST_CASE("Containers algorithms", "[Containers]")
     {                                                                                              \
         std::type<double, ##__VA_ARGS__> type init;                                                \
         REQUIRE(index_of(type, 2.) == 1);                                                          \
-        REQUIRE(index_of(type, 1111.) == static_cast<int>(std::size(type)));                                         \
+        REQUIRE(index_of(type, 1111.) == static_cast<int>(std::size(type)));                       \
     }
 
 #define TEST_SPLIT_T(value_type, value, expected_value_type, expected_value, sep)                  \
@@ -114,8 +122,15 @@ TEST_CASE("Containers algorithms", "[Containers]")
         ARG(std::vector<int>), ARG({ 1, 2, 3, 4, 5, 6 }), 4)
 
 
-    REQUIRE(*min(std::vector{1,2,3})==1);
-    REQUIRE(*max(std::vector{1,2,3})==3);
-    REQUIRE(min(std::vector<int>{})==std::nullopt);
-    REQUIRE(max(std::vector<int>{})==std::nullopt);
+    REQUIRE(*min(std::vector { 1, 2, 3 }) == 1);
+    REQUIRE(*max(std::vector { 1, 2, 3 }) == 3);
+    REQUIRE(min(std::vector<int> {}) == std::nullopt);
+    REQUIRE(max(std::vector<int> {}) == std::nullopt);
+
+    std::vector<TestBroadcast> c(10);
+    broadcast(c, &TestBroadcast::add, 1);
+    REQUIRE(TestBroadcast::result == 10);
+    int value = 0;
+    broadcast(c, &TestBroadcast::increment, value);
+    REQUIRE(value == 10);
 }

@@ -138,5 +138,24 @@ auto max(const T& v) -> decltype(std::cbegin(v), std::cend(v), std::optional { v
         return std::nullopt;
 }
 
+template <typename T, typename U, typename... V>
+auto broadcast(const T& collection, U fptr, V&&... parameters)
+    -> decltype(std::cbegin(collection), void())
+{
+    for (const auto& item : collection)
+    {
+        std::invoke(fptr, item, std::forward<V>(parameters)...);
+    }
+}
+
+template <typename T, typename U, typename... V>
+auto broadcast(T& collection, U fptr, V&&... parameters)
+    -> decltype(std::cbegin(collection), void())
+{
+    for (auto& item : collection)
+    {
+        std::invoke(fptr, item, std::forward<V>(parameters)...);
+    }
+}
 
 } //
