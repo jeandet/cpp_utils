@@ -1,4 +1,4 @@
-catch2_dep = dependency('catch2', required : true, fallback:['catch2','catch2_dep'])
+catch2_dep = dependency('catch2-with-main', version:'>3.0.0', required : true)
 
 if get_option('qt')
   qt5 = import('qt5')
