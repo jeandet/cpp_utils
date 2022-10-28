@@ -56,4 +56,6 @@ library('🔨', extra_files:
         'include/cpp_utils/types/qt_types.hpp'
     ])
 
-subdir('tests')
+if get_option('with_tests')
+    subdir('tests')
+endif

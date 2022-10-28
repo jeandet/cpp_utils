@@ -1,1 +1,2 @@
 option('qt', type : 'boolean', value : false, description : 'Build tests with Qt support.')
+option('with_tests', type : 'boolean', value : true, description : 'Build tests')
