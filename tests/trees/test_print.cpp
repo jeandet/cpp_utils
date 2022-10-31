@@ -6,6 +6,7 @@
 #include <trees/algorithms.hpp>
 #include <trees/node.hpp>
 #include <vector>
+#include <sstream>
 
 using namespace cpp_utils::types::detectors;
 using namespace cpp_utils::trees;
