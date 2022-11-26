@@ -36,7 +36,9 @@ if cppcheck.found()
               )
 endif
 
-library('🔨', extra_files:
+
+if build_machine.system() != 'windows'
+  library('🔨', extra_files:
     [
         'include/cpp_utils/containers/algorithms.hpp',
         'include/cpp_utils/cpp_utils_qt/cpp_utils_qt.hpp',
@@ -55,6 +57,7 @@ library('🔨', extra_files:
         'include/cpp_utils/trees/traits.hpp',
         'include/cpp_utils/types/qt_types.hpp'
     ])
+endif
 
 if get_option('with_tests')
     subdir('tests')
