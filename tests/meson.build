@@ -1,8 +1,8 @@
 catch2_dep = dependency('catch2-with-main', version:'>3.0.0', required : true)
 
 if get_option('qt')
-  qt5 = import('qt5')
-  qt5_dep = dependency('qt5', modules : ['Core', 'Widgets', 'Gui'])
+  qt5 = import('qt6')
+  qt5_dep = dependency('qt6', modules : ['Core', 'Widgets', 'Gui'])
 else
   qt5_dep = disabler()
 endif
@@ -67,8 +67,12 @@ tests = [
         'name':'TestEndianness',
         'sources': ['endianness/test_endianness.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
-    }
-    
+    },
+    {
+        'name':'TestLifetime',
+        'sources': ['lifetime/test_scope_leaving_guards.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
 ]
 
 foreach unit_test : tests

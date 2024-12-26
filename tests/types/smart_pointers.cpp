@@ -44,5 +44,6 @@ TEST_CASE("Smart pointers", "[types]")
     
     REQUIRE(std::is_same_v<decltype(to_value_ref(std::declval<std::unique_ptr<double>>())),double&>);
     REQUIRE(std::is_same_v<decltype(to_value_ref(std::declval<double*>())),double&>);
-    REQUIRE(std::is_same_v<decltype(to_value_ref(std::declval<double>())),double&>);
+    static double d;
+    REQUIRE(std::is_same_v<decltype(to_value_ref(d)),double&>);
 }

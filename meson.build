@@ -1,16 +1,42 @@
 project(
   'cpp_utils',
   'cpp',
-  default_options : ['cpp_std=c++17']
+  meson_version: '>= 1.2.0',
+  default_options : ['cpp_std=c++23']
 )
 
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
 
 cpp_utils_inc = include_directories(['include', '.', 'include/cpp_utils'])
 
+
+headers = files(
+    [
+        'include/cpp_utils/containers/algorithms.hpp',
+        'include/cpp_utils/containers/traits.hpp',
+        'include/cpp_utils/cpp_utils.hpp',
+        'include/cpp_utils/cpp_utils_qt/cpp_utils_qt.hpp',
+        'include/cpp_utils/cpp_utils_qt/types/converters.hpp',
+        'include/cpp_utils/cpp_utils_qt/types/pointers.hpp',
+        'include/cpp_utils/cpp_utils_qt/trees/traits.hpp',
+        'include/cpp_utils/endianness.hpp',
+        'include/cpp_utils/lifetime/scope_leaving_guards.hpp',
+        'include/cpp_utils/strings/algorithms.hpp',
+        'include/cpp_utils/trees/algorithms.hpp',
+        'include/cpp_utils/trees/node.hpp',
+        'include/cpp_utils/trees/traits.hpp',
+        'include/cpp_utils/types/concepts.hpp',
+        'include/cpp_utils/types/detectors.hpp',
+        'include/cpp_utils/types/pointers.hpp',
+        'include/cpp_utils/types/qt_types.hpp',
+        'include/cpp_utils/types/strings.hpp'
+    ]
+)
+
 cpp_utils_dep = declare_dependency(
         include_directories : cpp_utils_inc,
-        dependencies: [hedley_dep]
+        dependencies: [hedley_dep],
+        extra_files: headers
 )
 
 conf_data = configuration_data()
@@ -36,28 +62,6 @@ if cppcheck.found()
               )
 endif
 
-
-if build_machine.system() != 'windows'
-  library('🔨', extra_files:
-    [
-        'include/cpp_utils/containers/algorithms.hpp',
-        'include/cpp_utils/cpp_utils_qt/cpp_utils_qt.hpp',
-        'include/cpp_utils/cpp_utils_qt/types/pointers.hpp',
-        'include/cpp_utils/trees/algorithms.hpp',
-        'include/cpp_utils/types/detectors.hpp',
-        'include/cpp_utils/types/strings.hpp',
-        'include/cpp_utils/containers/traits.hpp',
-        'include/cpp_utils/cpp_utils_qt/trees/traits.hpp',
-        'include/cpp_utils/endianness.hpp',
-        'include/cpp_utils/trees/node.hpp',
-        'include/cpp_utils/types/pointers.hpp',
-        'include/cpp_utils/cpp_utils.hpp',
-        'include/cpp_utils/cpp_utils_qt/types/converters.hpp',
-        'include/cpp_utils/strings/algorithms.hpp',
-        'include/cpp_utils/trees/traits.hpp',
-        'include/cpp_utils/types/qt_types.hpp'
-    ])
-endif
 
 if get_option('with_tests')
     subdir('tests')
