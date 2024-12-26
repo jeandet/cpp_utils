@@ -44,6 +44,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep, qt5_dep]
     },
     {
+        'name':'TestConcepts',
+        'sources': ['types/concepts.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestContainersTraits',
         'sources': ['containers/test_containers_traits.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

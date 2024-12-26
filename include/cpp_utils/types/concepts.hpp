@@ -23,8 +23,11 @@
 ----------------------------------------------------------------------------*/
 #if __cplusplus >= 202000
 #include <concepts>
+#define CPP_UTILS_CONCEPTS_SUPPORTED
+#endif
 namespace cpp_utils::types::concepts
 {
+#ifdef CPP_UTILS_CONCEPTS_SUPPORTED
 
 /** pointer_to_contiguous_memory concept, requires pointer arithmetic and dereference */
 template <class T>
@@ -36,7 +39,7 @@ concept pointer_to_contiguous_memory = requires(T t) {
     { t -= 1 } -> std::same_as<T&>;
     { t[0] } -> std::convertible_to<std::remove_pointer_t<T>>;
 };
-} // namespace cpp_utils::types::concepts
 #else
 #warning "Concepts not supported before C++20"
 #endif
+} // namespace cpp_utils::types::concepts
