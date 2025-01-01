@@ -43,13 +43,13 @@ inline const bool host_is_little_endian = true;
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <string>
 #include <type_traits>
 
 #include <hedley.h>
 
-namespace Endianness
+namespace cpp_utils::endianness
 {
-
 namespace details
 {
     template <std::size_t s>
@@ -133,46 +133,56 @@ inline Endianness host_endianness_v()
 
 
 template <typename src_endianess_t, typename T, typename U>
-HEDLEY_NON_NULL(1)
+[[nodiscard]] HEDLEY_NON_NULL(1)
 T decode(const U* input)
 {
-    T result;
-    std::memcpy(&result, input, sizeof(T));
-    if constexpr (!std::is_same_v<host_endianness_t, src_endianess_t>)
+    if constexpr (sizeof(T) > 1)
     {
-        return details::byte_swap<T>(result);
+        T result;
+        std::memcpy(&result, input, sizeof(T));
+        if constexpr (!std::is_same_v<host_endianness_t, src_endianess_t>)
+        {
+            return details::byte_swap<T>(result);
+        }
+        return result;
     }
-    return result;
+    else
+    {
+        return static_cast<T>(*input);
+    }
 }
 
-template <typename dest_endianess_t, typename T, typename U>
+template <typename src_endianess_t, typename value_t>
 HEDLEY_NON_NULL(1)
-T encode(const U* input)
+inline void _impl_decode_v(const value_t* data, std::size_t size, value_t* output)
 {
-    return decode<dest_endianess_t>(input);
-}
-
-template <typename src_endianess_t, typename T, typename value_t>
-HEDLEY_NON_NULL(1, 3)
-inline std::enable_if_t<std::is_same_v<unsigned char, T> or std::is_same_v<char, T>> decode(
-    const T* input, std::size_t size, value_t* output)
-{
-    std::memcpy(output, input, size);
-    if constexpr (not std::is_same_v<host_endianness_t, src_endianess_t>)
+    if constexpr (sizeof(value_t) > 1 and not std::is_same_v<host_endianness_t, src_endianess_t>)
     {
-        std::size_t count = size / sizeof(value_t);
-        details::byte_swap(output, count);
+        if (size > 0)
+        {
+            for (auto i = 0UL; i < size; i++)
+            {
+                output[i] = details::byte_swap(data[i]);
+            }
+        }
     }
 }
 
-template <typename dest_endianess_t, typename value_t, typename T>
-HEDLEY_NON_NULL(1, 3)
-inline std::enable_if_t<std::is_same_v<unsigned char, T> or std::is_same_v<char, T>> encode(
-    const value_t* input, std::size_t count, T* output)
+
+template <typename src_endianess_t, typename value_t>
+HEDLEY_NON_NULL(1)
+inline void decode_v(value_t* data, std::size_t size)
 {
-    auto size = count * sizeof(value_t);
-    return decode<dest_endianess_t>(
-        reinterpret_cast<const char*>(input), size, reinterpret_cast<value_t*>(output));
+    _impl_decode_v<src_endianess_t>(reinterpret_cast<details::uint_t<sizeof(value_t)>*>(data), size, reinterpret_cast<details::uint_t<sizeof(value_t)>*>(data));
+}
+
+template <typename src_endianess_t, typename value_t>
+HEDLEY_NON_NULL(1)
+inline void decode_v(const auto* data, std::size_t size, value_t* output)
+{
+    using _value_t = details::uint_t<sizeof(value_t)>;
+    auto count = size * sizeof(decltype(*data)) / sizeof(value_t);
+    _impl_decode_v<src_endianess_t>(reinterpret_cast<const _value_t*>(data), count , reinterpret_cast<_value_t*>(output));
 }
 
 }

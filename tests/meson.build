@@ -78,6 +78,11 @@ tests = [
         'sources': ['lifetime/test_scope_leaving_guards.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
+    {
+        'name':'TestReflexionRecordLoader',
+        'sources': ['reflexion/test_records_loading.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
 ]
 
 foreach unit_test : tests
