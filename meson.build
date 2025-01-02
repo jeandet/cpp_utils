@@ -3,7 +3,7 @@ project(
   'cpp',
   meson_version: '>= 1.2.0',
   version : '0.1.0',
-  default_options : ['cpp_std=c++23']
+  default_options : ['cpp_std=c++20', 'buildtype=release']
 )
 
 hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep'])
