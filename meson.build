@@ -22,6 +22,7 @@ headers = files(
         'include/cpp_utils/cpp_utils_qt/types/pointers.hpp',
         'include/cpp_utils/cpp_utils_qt/trees/traits.hpp',
         'include/cpp_utils/endianness/endianness.hpp',
+        'include/cpp_utils/io/memory_mapped_file.hpp',
         'include/cpp_utils/lifetime/scope_leaving_guards.hpp',
         'include/cpp_utils/reflexion/reflection.hpp',
         'include/cpp_utils/strings/algorithms.hpp',

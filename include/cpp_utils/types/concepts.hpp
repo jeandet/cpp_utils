@@ -39,6 +39,10 @@ concept pointer_to_contiguous_memory = requires(T t) {
     { t -= 1 } -> std::same_as<T&>;
     { t[0] } -> std::convertible_to<std::remove_pointer_t<T>>;
 };
+
+template <class T>
+concept fundamental_type = std::is_fundamental_v<std::decay_t<T>>;
+
 #else
 #warning "Concepts not supported before C++20"
 #endif

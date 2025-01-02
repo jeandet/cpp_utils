@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include "../types/concepts.hpp"
 
 /*
  * see https://stackoverflow.com/questions/39768517/structured-bindings-width/39779537#39779537
@@ -355,19 +356,19 @@ struct is_field : std::false_type
 template <typename field_t>
 inline constexpr bool is_field_v = is_field<field_t>::value;
 
+
+constexpr inline std::size_t _load_field(const auto& , auto& parsing_context, std::size_t offset, types::concepts::fundamental_type auto&& field)
+{
+        using value_t = std::decay_t<decltype(field)>;
+        load_value(parsing_context, offset, std::addressof(field), sizeof(value_t));
+        return offset + sizeof(value_t);
+}
+
+
 template <typename record_t, typename parsing_context_t, typename T>
 constexpr inline std::size_t _load_field(const record_t& r, parsing_context_t& parsing_context, std::size_t offset, T&& field)
 {
-    if constexpr (std::is_fundamental_v<std::decay_t<T>>)
-    {
-        using namespace cpp_utils::reflexion;
-        load_value(parsing_context, offset, std::addressof(field), sizeof(T));
-        return offset + sizeof(T);
-    }
-    else
-    {
-        return load_field(r, parsing_context, offset, field);
-    }
+    return load_field(r, parsing_context, offset, field);
 }
 
 template <typename record_t, typename parsing_context_t, typename T>
