@@ -24,7 +24,6 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
-#include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include "../types/concepts.hpp"

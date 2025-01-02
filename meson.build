@@ -2,6 +2,7 @@ project(
   'cpp_utils',
   'cpp',
   meson_version: '>= 1.2.0',
+  version : '0.1.0',
   default_options : ['cpp_std=c++23']
 )
 
@@ -9,6 +10,7 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 
 cpp_utils_inc = include_directories(['include', '.', 'include/cpp_utils'])
 
+subdir('include/cpp_utils')
 
 headers = files(
     [
@@ -43,19 +45,7 @@ cpp_utils_dep = declare_dependency(
         extra_files: headers
 )
 
-conf_data = configuration_data()
-conf_data.set('version', meson.project_version())
-if(target_machine.endian() == 'big')
-    conf_data.set('CPP_UTILS_BIG_ENDIAN', true)
-else
-    conf_data.set('CPP_UTILS_LITTLE_ENDIAN', true)
-endif
-configure_file(input : 'config.h.in',
-               output : 'config.h',
-               format : 'cmake',
-               install : true,
-               install_dir : 'cpp_utils',
-               configuration : conf_data)
+
 
 cppcheck = find_program('cppcheck', required : false)
 

@@ -21,13 +21,14 @@
 --                     Mail : alexis.jeandet@lpp.polytechnique.fr
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#if __cplusplus >= 202000
+#include <hedley.h>
+#include "cpp_utils/config.h"
+#ifdef CPP_UTILS_CONCEPTS_SUPPORTED
 #include <concepts>
-#define CPP_UTILS_CONCEPTS_SUPPORTED
-#endif
+#include <type_traits>
+
 namespace cpp_utils::types::concepts
 {
-#ifdef CPP_UTILS_CONCEPTS_SUPPORTED
 
 /** pointer_to_contiguous_memory concept, requires pointer arithmetic and dereference */
 template <class T>
@@ -43,7 +44,8 @@ concept pointer_to_contiguous_memory = requires(T t) {
 template <class T>
 concept fundamental_type = std::is_fundamental_v<std::decay_t<T>>;
 
-#else
-#warning "Concepts not supported before C++20"
-#endif
 } // namespace cpp_utils::types::concepts
+#else
+HEDLEY_WARNING("Concepts not supported before C++20")
+#endif
+
