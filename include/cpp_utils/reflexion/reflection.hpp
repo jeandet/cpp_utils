@@ -376,7 +376,7 @@ constexpr inline std::size_t load_fields(const record_t& r, parsing_context_t& p
     [[maybe_unused]] std::size_t offset, T&& field)
 {
     using Field_t = std::remove_cv_t<std::remove_reference_t<T>>;
-    static constexpr std::size_t count = count_members<Field_t>;
+    constexpr std::size_t count = count_members<Field_t>;
     if constexpr (std::is_compound_v<Field_t> && (count > 1) && (not is_field_v<Field_t>))
         return load_record(field, parsing_context, offset);
     else
