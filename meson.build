@@ -39,10 +39,14 @@ headers = files(
     ]
 )
 
+cpp_utils_project_extra_files = files(
+  '.github/workflows/CI.yml',
+  '.github/workflows/tests-with-coverage.yml'
+)
 cpp_utils_dep = declare_dependency(
         include_directories : cpp_utils_inc,
         dependencies: [hedley_dep],
-        extra_files: headers
+        extra_files: [headers, cpp_utils_project_extra_files]
 )
 
 

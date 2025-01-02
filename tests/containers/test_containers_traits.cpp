@@ -17,8 +17,8 @@ TEST_CASE("Containers traits", "[Containers]")
 {
 #define TEST_IS_CONTAINER(type, ...)                                                               \
     {                                                                                              \
-        REQUIRE(is_container_v<std::type<double, ##__VA_ARGS__>>);                                 \
-        REQUIRE(_is_container<std::type<double, ##__VA_ARGS__>>());                                \
+        REQUIRE(is_container_v<std::type<double, ##__VA_ARGS__ > >);                               \
+        REQUIRE(_is_container<std::type<double, ##__VA_ARGS__ > >());                              \
     }
 
     TEST_IS_CONTAINER(list)
