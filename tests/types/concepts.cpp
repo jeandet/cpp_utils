@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <types/concepts.hpp>
 #include <vector>
+#include <memory>
 
 #ifdef CPP_UTILS_CONCEPTS_SUPPORTED
 using namespace cpp_utils::types::concepts;
