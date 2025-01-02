@@ -26,6 +26,7 @@
 #ifdef CPP_UTILS_CONCEPTS_SUPPORTED
 #include <concepts>
 #include <type_traits>
+#include <iterator>
 
 namespace cpp_utils::types::concepts
 {
@@ -43,6 +44,26 @@ concept pointer_to_contiguous_memory = requires(T t) {
 
 template <class T>
 concept fundamental_type = std::is_fundamental_v<std::decay_t<T>>;
+
+template <class T>
+concept container = requires(T t) {
+    { t.size() } -> std::convertible_to<std::size_t>;
+    { t.max_size() } -> std::convertible_to<std::size_t>;
+    { t.empty() } -> std::convertible_to<bool>;
+    { t.begin() } -> std::input_or_output_iterator;
+    { t.end() } -> std::input_or_output_iterator;
+    { t.cbegin() } -> std::input_or_output_iterator;
+    { t.cend() } -> std::input_or_output_iterator;
+};
+
+template <class T>
+concept sequence_container = container<T> && requires(T t) {
+    { t.front() } -> std::convertible_to<typename std::decay_t<T>::value_type>;
+};
+
+template <class T>
+concept contiguous_sequence_container = container<T> &&
+        std::contiguous_iterator<typename std::decay_t<T>::iterator>;
 
 } // namespace cpp_utils::types::concepts
 #else

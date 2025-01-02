@@ -25,6 +25,7 @@
 #include "../containers/traits.hpp"
 #include "../cpp_utils.hpp"
 #include "../types/detectors.hpp"
+#include "../types/concepts.hpp"
 #include <algorithm>
 #include <numeric>
 #include <optional>
@@ -67,12 +68,10 @@ auto index_of(const T1& container, const T2& value)
             [value](const auto& item) { return value == item.get(); }));
 }
 
-template <class input_t, template <typename val_t, typename...> class output_t, typename value_t>
-auto split(const input_t& input, output_t<input_t>& output, const value_t& splitVal)
-    -> decltype(void())
+
+void split(const types::concepts::contiguous_sequence_container auto& input, types::concepts::sequence_container auto&& output, const auto splitVal)
 {
-    static_assert(is_container_v<input_t>, "");
-    static_assert(is_container_v<output_t<input_t>>, "");
+    using input_t = std::decay_t<decltype(input)>;
     if (std::size(input) == 0)
         return;
     auto current = std::cbegin(input);

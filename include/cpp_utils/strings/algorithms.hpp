@@ -23,6 +23,7 @@
 ----------------------------------------------------------------------------*/
 #include "../containers/algorithms.hpp"
 #include "../types/strings.hpp"
+#include "../types/concepts.hpp"
 
 namespace cpp_utils::strings
 {
@@ -71,9 +72,9 @@ static inline std::string trim(const std::string& s)
     return rtrim(ltrim(s));
 }
 
-template <typename string_t, template <typename val_t, typename...> class list_t>
-auto make_unique_name(const string_t& base_name, const list_t<string_t>& blacklist)
+auto make_unique_name(const cpp_utils::types::concepts::contiguous_sequence_container auto& base_name, const cpp_utils::types::concepts::container auto& blacklist)
 {
+    using string_t = std::decay_t<decltype(base_name)>;
     using namespace cpp_utils;
     if (containers::contains(blacklist, base_name))
     {
