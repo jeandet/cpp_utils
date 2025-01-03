@@ -36,70 +36,36 @@ namespace details
 {
 struct anything
 {
-    template <class T>
+    template <class T> requires (!std::is_bounded_array_v<std::decay_t<T>>)
     operator T() const;
 };
 
-
-template <class T, class Is, class = void>
-struct _can_construct_with_N : std::false_type
-{
-};
-
-template <class T, std::size_t... Is>
-struct _can_construct_with_N<T, std::index_sequence<Is...>,
-    std::void_t<decltype(T { (void(Is), anything {})... })>> : std::true_type
-{
-};
-
-template <class T, std::size_t N>
-using can_construct_with_N = _can_construct_with_N<T, std::make_index_sequence<N>>;
-
-
-template <std::size_t Min, std::size_t Range, template <std::size_t N> class target>
-struct maximize
-        : std::conditional_t<maximize<Min, Range / 2, target> {} == (Min + Range / 2) - 1,
-              maximize<Min + Range / 2, (Range + 1) / 2, target>, maximize<Min, Range / 2, target>>
-{
-};
-template <std::size_t Min, template <std::size_t N> class target>
-struct maximize<Min, 1, target>
-        : std::conditional_t<target<Min> {}, std::integral_constant<std::size_t, Min>,
-              std::integral_constant<std::size_t, Min - 1>>
-{
-};
-template <std::size_t Min, template <std::size_t N> class target>
-struct maximize<Min, 0, target> : std::integral_constant<std::size_t, Min - 1>
-{
-};
-
-template <class T>
-struct construct_searcher
-{
-    template <std::size_t N>
-    using result = can_construct_with_N<T, N>;
-};
-
-template <class T, std::size_t Cap = 32>
-using construct_airity = details::maximize<0, Cap, details::construct_searcher<T>::template result>;
+template<typename T, typename... A0>
+consteval auto MemberCounter(auto ...c0) {
+    if constexpr (requires { T{ {A0{}}..., {anything{}}, c0... }; } == false
+               && requires { T{ {A0{}}..., c0..., anything{}}; } == false )
+        return sizeof...(A0) + sizeof...(c0);
+    else
+    if constexpr (requires { T{ {A0{}}..., {anything{}}, c0... }; })
+        return MemberCounter<T,A0...,anything>(c0...);
+    else
+        return MemberCounter<T,A0...>(c0...,anything{});
+}
 
 }
 
-template <typename T>
-inline constexpr std::size_t count_members
-    = details::construct_airity<std::remove_cv_t<std::remove_reference_t<T>>>::value;
 
 #define SPLIT_FIELDS_FW_DECL(return_type, name, const_struct)                                      \
     template <typename T, typename... Args>                                                        \
-    constexpr return_type name(const_struct T& structure, Args&&... args);
+    return_type name(const_struct T& structure, Args&&... args);
 
 
 #define SPLIT_FIELDS(return_type, name, function, const_struct)                                    \
     /* this looks quite ugly bit it is worth it!*/                                                 \
     template <typename T, typename... Args>                                                        \
-    constexpr return_type name(const_struct T& structure, Args&&... args)                                    \
+    return_type name(const_struct T& structure, Args&&... args)                                    \
     {                                                                                              \
-        constexpr std::size_t count = count_members<T>;                                            \
+        constexpr std::size_t count = cpp_utils::reflexion::count_members<T>;                                            \
         static_assert(count <= 31);                                                                \
                                                                                                    \
         if constexpr (count == 1)                                                                  \
@@ -344,60 +310,62 @@ inline constexpr std::size_t count_members
 namespace cpp_utils::reflexion
 {
 
-SPLIT_FIELDS_FW_DECL(std::size_t, load_record, );
-
-
-template <typename field_t>
-struct is_field : std::false_type
+struct field_tag_t
 {
 };
 
-template <typename field_t>
-inline constexpr bool is_field_v = is_field<field_t>::value;
-
-
-constexpr inline std::size_t _load_field(const auto& , auto& parsing_context, std::size_t offset, types::concepts::fundamental_type auto&& field)
+template <typename composite_t>
+consteval auto is_field()
 {
-        using value_t = std::decay_t<decltype(field)>;
-        load_value(parsing_context, offset, std::addressof(field), sizeof(value_t));
-        return offset + sizeof(value_t);
-}
-
-
-template <typename record_t, typename parsing_context_t, typename T>
-constexpr inline std::size_t _load_field(const record_t& r, parsing_context_t& parsing_context, std::size_t offset, T&& field)
-{
-    return load_field(r, parsing_context, offset, field);
-}
-
-template <typename record_t, typename parsing_context_t, typename T>
-constexpr inline std::size_t load_fields(const record_t& r, parsing_context_t& parsing_context,
-    [[maybe_unused]] std::size_t offset, T&& field)
-{
-    using Field_t = std::remove_cv_t<std::remove_reference_t<T>>;
-    constexpr std::size_t count = count_members<Field_t>;
-    if constexpr (std::is_compound_v<Field_t> && (count > 1) && (not is_field_v<Field_t>))
-        return load_record(field, parsing_context, offset);
+    if constexpr (requires { typename composite_t::field_tag; })
+    {
+        return true;
+    }
     else
-        return _load_field(r, parsing_context, offset, std::forward<T>(field));
+    {
+        return false;
+    }
 }
 
-template <typename record_t, typename parsing_context_t, typename T, typename... Ts>
-constexpr inline std::size_t load_fields(const record_t& r, parsing_context_t& parsing_context,
-    [[maybe_unused]] std::size_t offset, T&& field, Ts&&... fields)
+template <typename composite_t>
+inline constexpr bool is_field_v = is_field<composite_t>();
+
+template <typename T>
+inline constexpr std::size_t count_members = details::MemberCounter<T>();
+
+SPLIT_FIELDS_FW_DECL([[nodiscard]] constexpr std::size_t, composite_size, const);
+template <typename composite_t>
+consteval std::size_t composite_size();
+
+template <typename field_t>
+[[nodiscard]] consteval std::size_t field_size()
 {
-    offset = load_fields(r, parsing_context, offset, std::forward<T>(field));
-    return load_fields(r, parsing_context, offset, std::forward<Ts>(fields)...);
+    if constexpr (std::is_bounded_array_v<field_t>)
+        return sizeof(field_t)*std::extent_v<field_t>;
+    return sizeof(field_t);
 }
 
-SPLIT_FIELDS(std::size_t, load_record, load_fields, );
-
-template <typename record_t>
-constexpr record_t load_record(auto&& parsing_context, [[maybe_unused]] std::size_t offset)
+[[nodiscard]] constexpr inline std::size_t fields_size(const auto& , auto& field)
 {
-    record_t r;
-    load_record(r, std::forward<decltype(parsing_context)>(parsing_context), offset);
-    return r;
+    using Field_t = std::decay_t<decltype(field)>;
+    if constexpr (std::is_compound_v<Field_t> && ! std::is_bounded_array_v<Field_t> && !is_field_v<Field_t>)
+        return composite_size<Field_t>();
+    else
+        return field_size<Field_t>();
+}
+
+template <typename record_t, typename T, typename... Ts>
+[[nodiscard]] constexpr inline std::size_t fields_size(const record_t& s, T&& field, Ts&&... fields)
+{
+    return fields_size(s, std::forward<T>(field)) + fields_size(s, std::forward<Ts>(fields)...);
+}
+
+SPLIT_FIELDS([[nodiscard]] constexpr std::size_t, composite_size, fields_size, const);
+
+template <typename composite_t>
+consteval std::size_t composite_size()
+{
+    return composite_size(composite_t{});
 }
 
 } // namespace cpp_utils::reflexion

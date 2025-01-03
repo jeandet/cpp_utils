@@ -46,7 +46,7 @@
 namespace cpp_utils::io
 {
 
-struct mmap_adapter
+struct memory_mapped_file
 {
 #ifdef USE_MMAP
     int fd = -1;
@@ -59,7 +59,7 @@ struct mmap_adapter
     HANDLE hFile = NULL;
 #endif
 
-    mmap_adapter(const std::string& path)
+    memory_mapped_file(const std::string& path)
     {
 
         if (std::filesystem::exists(path))
@@ -92,7 +92,7 @@ struct mmap_adapter
             }
         }
     }
-    ~mmap_adapter()
+    ~memory_mapped_file()
     {
         if (mapped_file)
         {

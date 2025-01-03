@@ -65,6 +65,9 @@ template <class T>
 concept contiguous_sequence_container = container<T> &&
         std::contiguous_iterator<typename std::decay_t<T>::iterator>;
 
+template <class T>
+concept bounded_array = std::is_bounded_array_v<T>;
+
 } // namespace cpp_utils::types::concepts
 #else
 HEDLEY_WARNING("Concepts not supported before C++20")

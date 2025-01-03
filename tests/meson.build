@@ -79,8 +79,8 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
-        'name':'TestReflexionRecordLoader',
-        'sources': ['reflexion/test_records_loading.cpp'],
+        'name':'TestDeserialization',
+        'sources': ['serde/test_deserialization.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
 ]
