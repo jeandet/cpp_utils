@@ -87,10 +87,22 @@ namespace details
     using uint_t = typename uint<s>::type;
 
 
-    inline uint8_t bswap(uint8_t v) { return v; }
-    inline uint16_t bswap(uint16_t v) { return bswap16(v); }
-    inline uint32_t bswap(uint32_t v) { return bswap32(v); }
-    inline uint64_t bswap(uint64_t v) { return bswap64(v); }
+    inline uint8_t bswap(uint8_t v)
+    {
+        return v;
+    }
+    inline uint16_t bswap(uint16_t v)
+    {
+        return bswap16(v);
+    }
+    inline uint32_t bswap(uint32_t v)
+    {
+        return bswap32(v);
+    }
+    inline uint64_t bswap(uint64_t v)
+    {
+        return bswap64(v);
+    }
 
     template <typename T, std::size_t s = sizeof(T)>
     T byte_swap(T value)
@@ -117,6 +129,7 @@ enum class Endianness
 struct big_endian_t
 {
 };
+
 struct little_endian_t
 {
 };
@@ -132,16 +145,15 @@ inline constexpr bool is_big_endian_v = std::is_same_v<big_endian_t, endianness_
 inline Endianness host_endianness_v()
 {
     if constexpr (is_little_endian_v<host_endianness_t>)
-            return Endianness::little;
+        return Endianness::little;
     if constexpr (is_big_endian_v<host_endianness_t>)
-            return Endianness::big;
+        return Endianness::big;
     return Endianness::unknown;
 }
 
 
 template <typename src_endianess_t, typename T, typename U>
-[[nodiscard]] HEDLEY_NON_NULL(1)
-T decode(const U* input)
+[[nodiscard]] HEDLEY_NON_NULL(1) T decode(const U* input)
 {
     if constexpr (sizeof(T) > 1)
     {
@@ -173,6 +185,13 @@ inline void _impl_decode_v(const value_t* data, std::size_t size, value_t* outpu
             }
         }
     }
+    else
+    {
+        if (size > 0 && data != output)
+        {
+            std::memcpy(output, data, size * sizeof(value_t));
+        }
+    }
 }
 
 
@@ -180,7 +199,8 @@ template <typename src_endianess_t, typename value_t>
 HEDLEY_NON_NULL(1)
 inline void decode_v(value_t* data, std::size_t size)
 {
-    _impl_decode_v<src_endianess_t>(reinterpret_cast<details::uint_t<sizeof(value_t)>*>(data), size, reinterpret_cast<details::uint_t<sizeof(value_t)>*>(data));
+    _impl_decode_v<src_endianess_t>(reinterpret_cast<details::uint_t<sizeof(value_t)>*>(data), size,
+        reinterpret_cast<details::uint_t<sizeof(value_t)>*>(data));
 }
 
 template <typename src_endianess_t, typename value_t>
@@ -189,7 +209,8 @@ inline void decode_v(const auto* data, std::size_t size, value_t* output)
 {
     using _value_t = details::uint_t<sizeof(value_t)>;
     auto count = size * sizeof(decltype(*data)) / sizeof(value_t);
-    _impl_decode_v<src_endianess_t>(reinterpret_cast<const _value_t*>(data), count , reinterpret_cast<_value_t*>(output));
+    _impl_decode_v<src_endianess_t>(
+        reinterpret_cast<const _value_t*>(data), count, reinterpret_cast<_value_t*>(output));
 }
 
 }
