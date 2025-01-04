@@ -129,6 +129,9 @@ struct memory_mapped_file
 
     auto view(const std::size_t offset) const { return mapped_file + offset; }
 
+    auto size() const { return this->f_size; }
+    auto data() const { return view(0); }
+
     bool is_valid() const
     {
 #ifdef USE_MMAP
@@ -140,4 +143,17 @@ struct memory_mapped_file
     }
 };
 
+}
+
+namespace std
+{
+std::size_t size(const cpp_utils::io::memory_mapped_file& arr)
+{
+    return arr.size();
+}
+
+char* data(cpp_utils::io::memory_mapped_file& arr)
+{
+    return arr.view(0);
+}
 }

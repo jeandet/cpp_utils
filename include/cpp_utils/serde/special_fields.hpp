@@ -27,6 +27,7 @@
 #include "../endianness/endianness.hpp"
 #include "../reflexion/reflection.hpp"
 #include <vector>
+#include <limits>
 
 namespace cpp_utils::serde
 {
@@ -90,6 +91,9 @@ struct dynamic_array
     auto crbegin() const { return _data.crbegin(); }
     auto crend() const { return _data.crend(); }
 };
+
+template <typename T>
+using dynamic_array_until_eof = dynamic_array<std::numeric_limits<std::size_t>::max(),T>;
 
 template <typename T>
 concept dynamic_array_field = std::is_same_v<T, dynamic_array<T::id, typename T::value_type>>;

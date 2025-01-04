@@ -58,22 +58,34 @@ namespace details
         using T = std::decay_t<decltype(*dest)>;
         using parent_composite_t = std::decay_t<decltype(parent_composite)>;
         endianness::decode_v<endianness_t<parent_composite_t>, T>(
-            input_address + offset, count*sizeof(T), dest);
+            input_address + offset, count * sizeof(T), dest);
         return offset + sizeof(T) * count;
+    }
+
+    const char* _pointer_to_memory(const auto& input)
+    {
+        using input_t = std::decay_t<decltype(input)>;
+        if constexpr (requires { std::data(input); })
+        {
+            return reinterpret_cast<const char*>(std::data(input));
+        }
+        if constexpr (requires { input.data(); })
+        {
+            return reinterpret_cast<const char*>(input.data());
+        }
+        if constexpr (std::is_pointer_v<input_t>)
+        {
+            return reinterpret_cast<const char*>(input);
+        }
+        throw std::runtime_error("Unsupported input type");
     }
 }
 
-std::size_t load_value(const char* input, std::size_t offset,
+std::size_t load_value(const auto& input, std::size_t offset,
     types::concepts::fundamental_type auto& dest, const auto& parent_composite)
 {
-    return details::_load_value_from_memory(input, offset, dest, parent_composite);
-}
-
-std::size_t load_value(const types::concepts::contiguous_sequence_container auto& input,
-    std::size_t offset, types::concepts::fundamental_type auto& dest, const auto& parent_composite)
-{
     return details::_load_value_from_memory(
-        reinterpret_cast<const char*>(std::data(input)), offset, dest, parent_composite);
+        details::_pointer_to_memory(input), offset, dest, parent_composite);
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
@@ -85,50 +97,42 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
     std::size_t offset, dynamic_array_field auto& array_field)
 {
-    using input_t = std::decay_t<decltype(parsing_context)>;
-    using field_t = typename std::decay_t<decltype(array_field)>::value_type;
-    const auto count = parent_composite.field_size(array_field);
+    using array_field_t = std::decay_t<decltype(array_field)>;
+    using field_t = typename array_field_t::value_type;
+    const auto count = [&]()
+    {
+        if constexpr (std::is_same_v<array_field_t, dynamic_array_until_eof<field_t>>)
+        {
+            return (std::size(parsing_context) - offset) / reflexion::field_size<field_t>();
+        }
+        else
+        {
+            return parent_composite.field_size(array_field);
+        }
+    }();
     array_field.resize(count);
     if constexpr (std::is_compound_v<field_t>)
     {
         for (std::size_t i = 0; i < count; ++i)
         {
-            offset = deserialize(array_field[i], std::forward<decltype(parsing_context)>(parsing_context), offset);
+            offset = deserialize(
+                array_field[i], std::forward<decltype(parsing_context)>(parsing_context), offset);
         }
         return offset;
     }
     else
     {
-        if constexpr (types::concepts::contiguous_sequence_container<input_t>)
-        {
-            return details::_load_values_from_memory(
-                reinterpret_cast<const char*>(std::data(parsing_context)), offset, array_field.data(), count,
-                parent_composite);
-        }
-        if constexpr (std::is_pointer_v<input_t>)
-        {
-            return details::_load_values_from_memory(reinterpret_cast<const char*>(parsing_context),
-                offset, array_field.data(), count, parent_composite);
-        }
+        return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
+            offset, array_field.data(), count, parent_composite);
     }
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
     std::size_t offset, static_array_field auto& array_field)
 {
-    using input_t = std::decay_t<decltype(parsing_context)>;
     constexpr auto count = std::decay_t<decltype(array_field)>::array_size;
-    if constexpr (types::concepts::contiguous_sequence_container<input_t>)
-    {
-        return details::_load_values_from_memory(
-            reinterpret_cast<const char*>(std::data(parsing_context)), offset, array_field.data(), count,
-            parent_composite);
-    }
-    if constexpr (std::is_pointer_v<input_t>)
-    {
-        return details::_load_values_from_memory(reinterpret_cast<const char*>(parsing_context),
-            offset, array_field.data(), count, parent_composite);
-    }
+    return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context), offset,
+        array_field.data(), count, parent_composite);
 }
 
 template <typename composite_t, typename parsing_context_t, typename T>
@@ -137,7 +141,8 @@ constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t
 {
     using Field_t = std::decay_t<T>;
     constexpr std::size_t count = reflexion::count_members<Field_t>;
-    if constexpr (std::is_compound_v<Field_t> && (count >= 1) && (not reflexion::is_field_v<Field_t>))
+    if constexpr (std::is_compound_v<Field_t> && (count >= 1)
+        && (not reflexion::is_field_v<Field_t>))
         return deserialize(field, parsing_context, offset);
     else
         return load_field(r, parsing_context, offset, std::forward<T>(field));
