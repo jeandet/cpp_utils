@@ -40,19 +40,20 @@ struct padding_bytes_t
     static constexpr uint8_t padding_value = value;
 };
 
-template <typename field_t, std::size_t size>
+template <typename field_t, std::size_t sz>
 struct static_array
 {
 private:
-    field_t _data[size];
+    field_t _data[sz];
 public:
 using field_tag = reflexion::field_tag_t;
-    static constexpr std::size_t array_size = size;
+    static constexpr std::size_t array_size = sz;
     using value_type = field_t;
     const value_type& operator[](std::size_t index) const { return _data[index]; }
     value_type& operator[](std::size_t index) { return _data[index]; }
     value_type* data() { return _data; }
     const value_type* data() const { return _data; }
+    inline constexpr std::size_t size() const { return sz; }
 };
 
 template <typename T>
@@ -113,6 +114,22 @@ using endianness_t = decltype(_endianness<composite_t>());
 template <typename composite_t>
 inline constexpr bool is_big_endian_v
     = std::is_same_v<endianness_t<composite_t>, endianness::big_endian_t>;
+
+
+}
+
+namespace std
+{
+
+std::size_t size(const cpp_utils::serde::dynamic_array_field auto& arr)
+{
+    return arr.size();
+}
+
+std::size_t size(const cpp_utils::serde::static_array_field auto& arr)
+{
+    return arr.size();
+}
 
 
 }
