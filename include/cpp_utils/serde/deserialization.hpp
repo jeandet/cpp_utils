@@ -94,22 +94,15 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     return load_value(parsing_context, offset, field, parent_composite);
 }
 
+template <typename field_t>
+concept dyn_array_field = dynamic_array_field<field_t> && !dynamic_array_until_eof_field<field_t>;
+
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, dynamic_array_field auto& array_field)
+    std::size_t offset, dyn_array_field auto& array_field)
 {
     using array_field_t = std::decay_t<decltype(array_field)>;
     using field_t = typename array_field_t::value_type;
-    const auto count = [&]()
-    {
-        if constexpr (std::is_same_v<array_field_t, dynamic_array_until_eof<field_t>>)
-        {
-            return (std::size(parsing_context) - offset) / reflexion::field_size<field_t>();
-        }
-        else
-        {
-            return parent_composite.field_size(array_field);
-        }
-    }();
+    const auto count = parent_composite.field_size(array_field);
     array_field.resize(count);
     if constexpr (std::is_compound_v<field_t>)
     {
@@ -125,6 +118,56 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
         return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
             offset, array_field.data(), count, parent_composite);
     }
+}
+
+template <typename field_t>
+concept dy_arr_until_eof_of_const_size
+    = dynamic_array_until_eof_field<std::decay_t<field_t>> && const_size_field<typename std::decay_t<field_t>::value_type>;
+
+constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
+    std::size_t offset, dy_arr_until_eof_of_const_size auto& array_field)
+{
+    using array_field_t = std::decay_t<decltype(array_field)>;
+    using field_t = typename array_field_t::value_type;
+    constexpr auto field_size = reflexion::field_size<field_t>();
+    const auto count = (parsing_context.size() - offset) / field_size;
+
+    array_field.resize(count);
+    if constexpr (std::is_compound_v<field_t>)
+    {
+        for (std::size_t i = 0; i < count; ++i)
+        {
+            offset = deserialize(
+                array_field[i], std::forward<decltype(parsing_context)>(parsing_context), offset);
+        }
+        return offset;
+    }
+    else
+    {
+        return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
+            offset, array_field.data(), count, parent_composite);
+    }
+}
+
+template <typename field_t>
+concept dy_arr_until_eof_of_dyn_size
+    = dynamic_array_until_eof_field<field_t> && !const_size_field<typename field_t::value_type>;
+
+
+constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
+    std::size_t offset, dy_arr_until_eof_of_dyn_size auto& array_field)
+{
+    using array_field_t = std::decay_t<decltype(array_field)>;
+    using field_t = typename array_field_t::value_type;
+
+    static_assert(std::is_compound_v<field_t>, "Only compound types are supported");
+    while (offset < std::size(parsing_context))
+    {
+        array_field.emplace_back(field_t {});
+        offset = deserialize(
+            array_field.back(), std::forward<decltype(parsing_context)>(parsing_context), offset);
+    }
+    return offset;
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,

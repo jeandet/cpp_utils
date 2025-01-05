@@ -26,8 +26,8 @@
 #pragma once
 #include "../endianness/endianness.hpp"
 #include "../reflexion/reflection.hpp"
-#include <vector>
 #include <limits>
+#include <vector>
 
 namespace cpp_utils::serde
 {
@@ -46,8 +46,9 @@ struct static_array
 {
 private:
     field_t _data[sz];
+
 public:
-using field_tag = reflexion::field_tag_t;
+    using field_tag = reflexion::field_tag_t;
     static constexpr std::size_t array_size = sz;
     using value_type = field_t;
     const value_type& operator[](std::size_t index) const { return _data[index]; }
@@ -63,10 +64,12 @@ concept static_array_field = std::is_same_v<T, static_array<typename T::value_ty
 template <std::size_t ID, typename field_t>
 struct dynamic_array
 {
-    private:
+private:
     std::vector<field_t> _data;
-    public:
+
+public:
     using field_tag = reflexion::field_tag_t;
+    using dyn_size_field_tag = reflexion::dyn_size_field_tag_t;
     using value_type = field_t;
     static constexpr std::size_t id = ID;
     const value_type& operator[](std::size_t index) const { return _data[index]; }
@@ -77,6 +80,12 @@ struct dynamic_array
     void resize(std::size_t size) { _data.resize(size); }
     void push_back(const value_type& value) { _data.push_back(value); }
     void push_back(value_type&& value) { _data.push_back(std::move(value)); }
+    void emplace_back(const value_type& value) { _data.emplace_back(value); }
+    void emplace_back(value_type&& value) { _data.emplace_back(std::move(value)); }
+    template <typename... Args>
+    void emplace_back(Args&&... args) { _data.emplace_back(std::forward<Args>(args)...); }
+    auto& back() { return _data.back(); }
+    auto& front() { return _data.front(); }
     void clear() { _data.clear(); }
     auto begin() { return _data.begin(); }
     auto end() { return _data.end(); }
@@ -93,11 +102,35 @@ struct dynamic_array
 };
 
 template <typename T>
-using dynamic_array_until_eof = dynamic_array<std::numeric_limits<std::size_t>::max(),T>;
-
-template <typename T>
 concept dynamic_array_field = std::is_same_v<T, dynamic_array<T::id, typename T::value_type>>;
 
+template <typename T>
+using dynamic_array_until_eof = dynamic_array<std::numeric_limits<std::size_t>::max(), T>;
+
+template <typename field_t>
+concept dynamic_array_until_eof_field
+    = std::is_same_v<field_t, dynamic_array_until_eof<typename field_t::value_type>>;
+
+template <typename field_t>
+consteval bool _has_const_size()
+{
+    if constexpr (std::is_compound_v<field_t>)
+    {
+        return reflexion::composite_have_const_size<field_t>();
+    }
+    else
+    {
+        return !reflexion::is_dyn_size_field_v<std::decay_t<field_t>>;
+    }
+}
+
+template <typename field_t>
+concept const_size_field = _has_const_size<std::decay_t<field_t>>();
+
+
+template <typename field_t>
+concept dynamic_array_of_constant_size_field
+    = dynamic_array_field<field_t> && const_size_field<typename field_t::value_type>;
 
 template <typename composite_t>
 consteval auto _endianness()

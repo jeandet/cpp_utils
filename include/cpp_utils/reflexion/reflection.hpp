@@ -24,9 +24,9 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include "../types/concepts.hpp"
 #include <type_traits>
 #include <utility>
-#include "../types/concepts.hpp"
 
 /*
  * see https://stackoverflow.com/questions/39768517/structured-bindings-width/39779537#39779537
@@ -36,20 +36,22 @@ namespace details
 {
 struct anything
 {
-    template <class T> requires (!std::is_bounded_array_v<std::decay_t<T>>)
+    template <class T>
+        requires(!std::is_bounded_array_v<std::decay_t<T>>)
     operator T() const;
 };
 
-template<typename T, typename... A0>
-consteval auto MemberCounter(auto ...c0) {
-    if constexpr (requires { T{ {A0{}}..., {anything{}}, c0... }; } == false
-               && requires { T{ {A0{}}..., c0..., anything{}}; } == false )
+template <typename T, typename... A0>
+consteval auto MemberCounter(auto... c0)
+{
+    if constexpr (
+        requires { T { { A0 {} }..., { anything {} }, c0... }; } == false
+        && requires { T { { A0 {} }..., c0..., anything {} }; } == false)
         return sizeof...(A0) + sizeof...(c0);
+    else if constexpr (requires { T { { A0 {} }..., { anything {} }, c0... }; })
+        return MemberCounter<T, A0..., anything>(c0...);
     else
-    if constexpr (requires { T{ {A0{}}..., {anything{}}, c0... }; })
-        return MemberCounter<T,A0...,anything>(c0...);
-    else
-        return MemberCounter<T,A0...>(c0...,anything{});
+        return MemberCounter<T, A0...>(c0..., anything {});
 }
 
 }
@@ -65,7 +67,7 @@ consteval auto MemberCounter(auto ...c0) {
     template <typename T, typename... Args>                                                        \
     return_type name(const_struct T& structure, Args&&... args)                                    \
     {                                                                                              \
-        constexpr std::size_t count = cpp_utils::reflexion::count_members<T>;                                            \
+        constexpr std::size_t count = cpp_utils::reflexion::count_members<T>;                      \
         static_assert(count <= 31);                                                                \
                                                                                                    \
         if constexpr (count == 1)                                                                  \
@@ -330,8 +332,71 @@ consteval auto is_field()
 template <typename composite_t>
 inline constexpr bool is_field_v = is_field<composite_t>();
 
+struct dyn_size_field_tag_t
+{
+};
+
+template <typename composite_t>
+consteval auto is_dyn_size_field()
+{
+    if constexpr (requires { typename std::decay_t<composite_t>::dyn_size_field_tag; })
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+template <typename composite_t>
+inline constexpr bool is_dyn_size_field_v = is_dyn_size_field<std::decay_t<composite_t>>();
+
 template <typename T>
 inline constexpr std::size_t count_members = details::MemberCounter<T>();
+
+SPLIT_FIELDS_FW_DECL([[nodiscard]] constexpr bool, fields_have_const_size, const);
+template <typename composite_t>
+consteval std::size_t composite_have_const_size();
+
+template <typename field_t>
+[[nodiscard]] consteval bool field_have_const_size()
+{
+    using Field_t = std::decay_t<field_t>;
+    if constexpr (is_dyn_size_field_v<Field_t>)
+        return false;
+    return true;
+}
+
+[[nodiscard]] constexpr inline bool fields_have_const_size(const auto&, auto& field)
+{
+    using Field_t = std::decay_t<decltype(field)>;
+    if constexpr (std::is_compound_v<Field_t> && !std::is_bounded_array_v<Field_t>
+        && !is_field_v<Field_t>)
+        return composite_have_const_size<Field_t>();
+    else
+        return field_have_const_size<Field_t>();
+}
+
+template <typename record_t, typename T, typename... Ts>
+[[nodiscard]] constexpr inline bool fields_have_const_size(const record_t& s, T&& field, Ts&&... fields)
+{
+    return fields_have_const_size(s, std::forward<T>(field)) && fields_have_const_size(s, std::forward<Ts>(fields)...);
+}
+
+SPLIT_FIELDS([[nodiscard]] constexpr bool, composite_have_const_size, fields_have_const_size, const);
+
+template <typename composite_t>
+consteval std::size_t composite_have_const_size()
+{
+    if constexpr (std::is_fundamental_v<composite_t>)
+        return true;
+    if constexpr (is_dyn_size_field_v<composite_t>)
+        return false;
+    else
+        return composite_have_const_size(composite_t {});
+}
+
 
 SPLIT_FIELDS_FW_DECL([[nodiscard]] constexpr std::size_t, composite_size, const);
 template <typename composite_t>
@@ -340,15 +405,21 @@ consteval std::size_t composite_size();
 template <typename field_t>
 [[nodiscard]] consteval std::size_t field_size()
 {
-    if constexpr (std::is_bounded_array_v<field_t>)
-        return sizeof(field_t)*std::extent_v<field_t>;
-    return sizeof(field_t);
+    using Field_t = std::decay_t<field_t>;
+    static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
+    if constexpr (std::is_bounded_array_v<Field_t>)
+        return sizeof(Field_t) * std::extent_v<Field_t>;
+    if constexpr (std::is_compound_v<Field_t> && !is_field_v<Field_t>)
+        return composite_size<Field_t>();
+    return sizeof(Field_t);
 }
 
-[[nodiscard]] constexpr inline std::size_t fields_size(const auto& , auto& field)
+[[nodiscard]] constexpr inline std::size_t fields_size(const auto&, auto& field)
 {
     using Field_t = std::decay_t<decltype(field)>;
-    if constexpr (std::is_compound_v<Field_t> && ! std::is_bounded_array_v<Field_t> && !is_field_v<Field_t>)
+    static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
+    if constexpr (std::is_compound_v<Field_t> && !std::is_bounded_array_v<Field_t>
+        && !is_field_v<Field_t>)
         return composite_size<Field_t>();
     else
         return field_size<Field_t>();
@@ -365,7 +436,8 @@ SPLIT_FIELDS([[nodiscard]] constexpr std::size_t, composite_size, fields_size, c
 template <typename composite_t>
 consteval std::size_t composite_size()
 {
-    return composite_size(composite_t{});
+    static_assert(composite_have_const_size<composite_t>(), "Composite type must have a constant size");
+    return composite_size(composite_t {});
 }
 
 } // namespace cpp_utils::reflexion
