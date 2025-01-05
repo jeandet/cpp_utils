@@ -94,6 +94,14 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     return load_value(parsing_context, offset, field, parent_composite);
 }
 
+constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
+    std::size_t offset, types::concepts::enum_type auto& field)
+{
+    using underlying_t = std::underlying_type_t<std::decay_t<decltype(field)>>;
+    underlying_t& underlying_field = reinterpret_cast<underlying_t&>(field);
+    return load_value(parsing_context, offset, underlying_field, parent_composite);
+}
+
 template <typename field_t>
 concept dyn_array_field = dynamic_array_field<field_t> && !dynamic_array_until_eof_field<field_t>;
 
@@ -121,8 +129,8 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
 }
 
 template <typename field_t>
-concept dy_arr_until_eof_of_const_size
-    = dynamic_array_until_eof_field<std::decay_t<field_t>> && const_size_field<typename std::decay_t<field_t>::value_type>;
+concept dy_arr_until_eof_of_const_size = dynamic_array_until_eof_field<std::decay_t<field_t>>
+    && const_size_field<typename std::decay_t<field_t>::value_type>;
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
     std::size_t offset, dy_arr_until_eof_of_const_size auto& array_field)
@@ -154,8 +162,8 @@ concept dy_arr_until_eof_of_dyn_size
     = dynamic_array_until_eof_field<field_t> && !const_size_field<typename field_t::value_type>;
 
 
-constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, dy_arr_until_eof_of_dyn_size auto& array_field)
+constexpr inline std::size_t load_field(const auto&, auto& parsing_context, std::size_t offset,
+    dy_arr_until_eof_of_dyn_size auto& array_field)
 {
     using array_field_t = std::decay_t<decltype(array_field)>;
     using field_t = typename array_field_t::value_type;

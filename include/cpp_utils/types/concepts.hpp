@@ -46,6 +46,9 @@ template <class T>
 concept fundamental_type = std::is_fundamental_v<std::decay_t<T>>;
 
 template <class T>
+concept enum_type = std::is_enum_v<std::decay_t<T>>;
+
+template <class T>
 concept container = requires(T t) {
     { t.size() } -> std::convertible_to<std::size_t>;
     { t.max_size() } -> std::convertible_to<std::size_t>;

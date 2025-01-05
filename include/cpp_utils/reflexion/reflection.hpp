@@ -325,7 +325,7 @@ consteval auto is_field()
     }
     else
     {
-        return false;
+        return std::is_fundamental_v<composite_t> || std::is_enum_v<composite_t>;
     }
 }
 
@@ -379,17 +379,20 @@ template <typename field_t>
 }
 
 template <typename record_t, typename T, typename... Ts>
-[[nodiscard]] constexpr inline bool fields_have_const_size(const record_t& s, T&& field, Ts&&... fields)
+[[nodiscard]] constexpr inline bool fields_have_const_size(
+    const record_t& s, T&& field, Ts&&... fields)
 {
-    return fields_have_const_size(s, std::forward<T>(field)) && fields_have_const_size(s, std::forward<Ts>(fields)...);
+    return fields_have_const_size(s, std::forward<T>(field))
+        && fields_have_const_size(s, std::forward<Ts>(fields)...);
 }
 
-SPLIT_FIELDS([[nodiscard]] constexpr bool, composite_have_const_size, fields_have_const_size, const);
+SPLIT_FIELDS(
+    [[nodiscard]] constexpr bool, composite_have_const_size, fields_have_const_size, const);
 
 template <typename composite_t>
 consteval std::size_t composite_have_const_size()
 {
-    if constexpr (std::is_fundamental_v<composite_t>)
+    if constexpr (std::is_fundamental_v<composite_t> || std::is_enum_v<composite_t>)
         return true;
     if constexpr (is_dyn_size_field_v<composite_t>)
         return false;
@@ -436,7 +439,8 @@ SPLIT_FIELDS([[nodiscard]] constexpr std::size_t, composite_size, fields_size, c
 template <typename composite_t>
 consteval std::size_t composite_size()
 {
-    static_assert(composite_have_const_size<composite_t>(), "Composite type must have a constant size");
+    static_assert(
+        composite_have_const_size<composite_t>(), "Composite type must have a constant size");
     return composite_size(composite_t {});
 }
 
