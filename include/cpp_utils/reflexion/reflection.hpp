@@ -312,34 +312,34 @@ consteval auto MemberCounter(auto... c0)
 namespace cpp_utils::reflexion
 {
 
-struct field_tag_t
+struct do_not_split_t
 {
 };
 
-template <typename composite_t>
-consteval auto is_field()
+template <typename T>
+consteval auto can_split()
 {
-    if constexpr (requires { typename composite_t::field_tag; })
+    if constexpr (requires { typename T::do_not_split; })
     {
-        return true;
+        return false;
     }
     else
     {
-        return std::is_fundamental_v<composite_t> || std::is_enum_v<composite_t>;
+        return !(std::is_fundamental_v<T> || std::is_enum_v<T>);
     }
 }
 
-template <typename composite_t>
-inline constexpr bool is_field_v = is_field<composite_t>();
+template <typename T>
+inline constexpr bool can_split_v = can_split<T>();
 
 struct dyn_size_field_tag_t
 {
 };
 
-template <typename composite_t>
+template <typename T>
 consteval auto is_dyn_size_field()
 {
-    if constexpr (requires { typename std::decay_t<composite_t>::dyn_size_field_tag; })
+    if constexpr (requires { typename std::decay_t<T>::dyn_size_field_tag; })
     {
         return true;
     }
@@ -349,14 +349,15 @@ consteval auto is_dyn_size_field()
     }
 }
 
-template <typename composite_t>
-inline constexpr bool is_dyn_size_field_v = is_dyn_size_field<std::decay_t<composite_t>>();
+template <typename T>
+inline constexpr bool is_dyn_size_field_v = is_dyn_size_field<std::decay_t<T>>();
 
 template <typename T>
 inline constexpr std::size_t count_members = details::MemberCounter<T>();
 
 SPLIT_FIELDS_FW_DECL([[nodiscard]] constexpr bool, fields_have_const_size, const);
-template <typename composite_t>
+
+template <typename T>
 consteval std::size_t composite_have_const_size();
 
 template <typename field_t>
@@ -372,7 +373,7 @@ template <typename field_t>
 {
     using Field_t = std::decay_t<decltype(field)>;
     if constexpr (std::is_compound_v<Field_t> && !std::is_bounded_array_v<Field_t>
-        && !is_field_v<Field_t>)
+        && can_split_v<Field_t>)
         return composite_have_const_size<Field_t>();
     else
         return field_have_const_size<Field_t>();
@@ -412,7 +413,7 @@ template <typename field_t>
     static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
     if constexpr (std::is_bounded_array_v<Field_t>)
         return sizeof(Field_t) * std::extent_v<Field_t>;
-    if constexpr (std::is_compound_v<Field_t> && !is_field_v<Field_t>)
+    if constexpr (can_split_v<Field_t>)
         return composite_size<Field_t>();
     return sizeof(Field_t);
 }
@@ -421,8 +422,7 @@ template <typename field_t>
 {
     using Field_t = std::decay_t<decltype(field)>;
     static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
-    if constexpr (std::is_compound_v<Field_t> && !std::is_bounded_array_v<Field_t>
-        && !is_field_v<Field_t>)
+    if constexpr (can_split_v<Field_t> && !std::is_bounded_array_v<Field_t>)
         return composite_size<Field_t>();
     else
         return field_size<Field_t>();

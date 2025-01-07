@@ -36,7 +36,7 @@ namespace cpp_utils::serde
 template <std::size_t size, uint8_t value>
 struct padding_bytes_t
 {
-    using field_tag = reflexion::field_tag_t;
+    using do_not_split = reflexion::do_not_split_t;
     static constexpr std::size_t padding_size = size;
     static constexpr uint8_t padding_value = value;
 };
@@ -48,7 +48,7 @@ private:
     field_t _data[sz];
 
 public:
-    using field_tag = reflexion::field_tag_t;
+    using do_not_split = reflexion::do_not_split_t;
     static constexpr std::size_t array_size = sz;
     using value_type = field_t;
     const value_type& operator[](std::size_t index) const { return _data[index]; }
@@ -68,7 +68,7 @@ private:
     std::vector<field_t> _data;
 
 public:
-    using field_tag = reflexion::field_tag_t;
+    using do_not_split = reflexion::do_not_split_t;
     using dyn_size_field_tag = reflexion::dyn_size_field_tag_t;
     using value_type = field_t;
     static constexpr std::size_t id = ID;

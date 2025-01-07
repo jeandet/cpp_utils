@@ -141,7 +141,7 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     const auto count = (parsing_context.size() - offset) / field_size;
 
     array_field.resize(count);
-    if constexpr (std::is_compound_v<field_t>)
+    if constexpr (reflexion::can_split_v<field_t>)
     {
         for (std::size_t i = 0; i < count; ++i)
         {
@@ -192,8 +192,7 @@ constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t
 {
     using Field_t = std::decay_t<T>;
     constexpr std::size_t count = reflexion::count_members<Field_t>;
-    if constexpr (std::is_compound_v<Field_t> && (count >= 1)
-        && (not reflexion::is_field_v<Field_t>))
+    if constexpr (reflexion::can_split_v<Field_t> && (count >= 1))
         return deserialize(field, parsing_context, offset);
     else
         return load_field(r, parsing_context, offset, std::forward<T>(field));
