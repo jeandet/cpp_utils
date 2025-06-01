@@ -5,11 +5,11 @@
 struct TestStruc
 {
     int member;
-    void valid(){};
-    void overload_method(){};
-    void overload_method(int){};
-    void overload_method(double){};  
-    void overload_method(double, int){}; 
+    void valid(){}
+    void overload_method(){}
+    void overload_method(int){}
+    void overload_method(double){}
+    void overload_method(double, int){}
 };
 
 struct DerivedTestStruc: TestStruc

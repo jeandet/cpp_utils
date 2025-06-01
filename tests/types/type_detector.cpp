@@ -12,7 +12,7 @@ struct TestStruc
     using valid_ref = int&;
     using valid_const_ref = const int&;
     int value;
-    void method(){};
+    void method(){}
 };
 
 struct DerivedTestStruc: TestStruc

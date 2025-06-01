@@ -22,9 +22,8 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
+#include <string>
 #include "../types/detectors.hpp"
-
-#include <algorithm>
 
 namespace cpp_utils::trees
 {
@@ -38,7 +37,7 @@ namespace
     HAS_MEMBER(name)
     HAS_METHOD(has_name_method, name)
     HAS_METHOD(has_text_method, text)
-};
+}
 
 template <typename T>
 std::string _get_name(const T& item)
