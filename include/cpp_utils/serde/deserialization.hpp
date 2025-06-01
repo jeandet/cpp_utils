@@ -111,21 +111,25 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     using array_field_t = std::decay_t<decltype(array_field)>;
     using field_t = typename array_field_t::value_type;
     const auto count = parent_composite.field_size(array_field);
-    array_field.resize(count);
-    if constexpr (std::is_compound_v<field_t>)
+    if (count > 0)
     {
-        for (std::size_t i = 0; i < count; ++i)
+        array_field.resize(count);
+        if constexpr (std::is_compound_v<field_t>)
         {
-            offset = deserialize(
-                array_field[i], std::forward<decltype(parsing_context)>(parsing_context), offset);
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                offset = deserialize(array_field[i],
+                    std::forward<decltype(parsing_context)>(parsing_context), offset);
+            }
+            return offset;
         }
-        return offset;
+        else
+        {
+            return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
+                offset, array_field.data(), count, parent_composite);
+        }
     }
-    else
-    {
-        return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
-            offset, array_field.data(), count, parent_composite);
-    }
+    return offset;
 }
 
 template <typename field_t>
@@ -140,21 +144,25 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     constexpr auto field_size = reflexion::field_size<field_t>();
     const auto count = (parsing_context.size() - offset) / field_size;
 
-    array_field.resize(count);
-    if constexpr (reflexion::can_split_v<field_t>)
+    if (count > 0)
     {
-        for (std::size_t i = 0; i < count; ++i)
+        array_field.resize(count);
+        if constexpr (reflexion::can_split_v<field_t>)
         {
-            offset = deserialize(
-                array_field[i], std::forward<decltype(parsing_context)>(parsing_context), offset);
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                offset = deserialize(array_field[i],
+                    std::forward<decltype(parsing_context)>(parsing_context), offset);
+            }
+            return offset;
         }
-        return offset;
+        else
+        {
+            return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
+                offset, array_field.data(), count, parent_composite);
+        }
     }
-    else
-    {
-        return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
-            offset, array_field.data(), count, parent_composite);
-    }
+    return offset;
 }
 
 template <typename field_t>
