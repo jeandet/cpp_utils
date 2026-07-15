@@ -41,17 +41,37 @@ struct anything
     operator T() const;
 };
 
-template <typename T, typename... A0>
-consteval auto MemberCounter(auto... c0)
+template <typename T, std::size_t N>
+consteval bool can_construct_with_n()
 {
-    if constexpr (
-        requires { T { { A0 {} }..., { anything {} }, c0... }; } == false
-        && requires { T { { A0 {} }..., c0..., anything {} }; } == false)
-        return sizeof...(A0) + sizeof...(c0);
-    else if constexpr (requires { T { { A0 {} }..., { anything {} }, c0... }; })
-        return MemberCounter<T, A0..., anything>(c0...);
+    return []<std::size_t... Is>(std::index_sequence<Is...>)
+    {
+        return requires { T { { (void(Is), anything {}) }... }; };
+    }(std::make_index_sequence<N> {});
+}
+
+template <typename T, std::size_t Lo, std::size_t Hi>
+consteval std::size_t binary_search_member_count()
+{
+    if constexpr (Lo == Hi)
+        return Lo;
     else
-        return MemberCounter<T, A0...>(c0..., anything {});
+    {
+        constexpr std::size_t mid = Lo + (Hi - Lo + 1) / 2;
+        if constexpr (can_construct_with_n<T, mid>())
+            return binary_search_member_count<T, mid, Hi>();
+        else
+            return binary_search_member_count<T, Lo, mid - 1>();
+    }
+}
+
+template <typename T, std::size_t Cap = 31>
+consteval std::size_t MemberCounter()
+{
+    static_assert(can_construct_with_n<T, Cap + 1>() == false,
+        "cpp_utils::reflexion: type has more than 31 members, which is not supported by "
+        "SPLIT_FIELDS");
+    return binary_search_member_count<T, 0, Cap>();
 }
 
 }
