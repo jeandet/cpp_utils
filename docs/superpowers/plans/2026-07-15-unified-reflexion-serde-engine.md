@@ -1479,7 +1479,25 @@ Expected: **compile failure** — `cpp_utils::serde::unused` doesn't exist yet.
 
 - [ ] **Step 3: Add `unused<T>` to `special_fields.hpp`**
 
-Add, near the end of the file (after `dynamic_array_of_constant_size_field`, before the `std` specializations block):
+**Update (found during Task 4):** Task 4's implementer discovered that `padding_bytes_t` — a
+field-wrapper type with **zero real (non-static) data members**, only `static constexpr`
+fields — breaks `reflexion::count_members` whenever it appears as a *non-trailing* member of
+a struct. Root cause: `count_members` tests slot-by-slot whether `Outer{ ..., {anything{}},
+... }` compiles; a zero-member aggregate can't accept exactly one nested `{anything{}}}`
+initializer (aggregate-list-init of 0 members from 1 initializer is "too many initializers"),
+so the flat-slot-to-real-member mapping stops being one-to-one past that point. The fix Task 4
+applied: give `padding_bytes_t` a private dummy data member, which makes it a non-aggregate —
+list-init then resolves through the implicit copy constructor (convertible from a single
+`anything`, via `anything`'s templated conversion operator), making it count as exactly one
+opaque slot again, the same way `static_array`/`dynamic_array` already do via their own
+private `_data` member.
+
+`unused<T>` as originally planned has the exact same problem: zero real data members (only
+`using` aliases and a conditionally-inherited empty base). Since this task's own test struct
+(`with_reserved`, below) puts `unused<int32_t> reserved` in a **non-trailing** position — the
+precise shape that triggers the bug — apply the same fix up front instead of rediscovering it:
+give `unused<T>` a private dummy member too. Add, near the end of `special_fields.hpp` (after
+`dynamic_array_of_constant_size_field`, before the `std` specializations block):
 
 ```cpp
 namespace details
@@ -1498,11 +1516,17 @@ struct unused : std::conditional_t<!const_size_field<T>, details::dyn_size_base,
 {
     using do_not_split = reflexion::do_not_split_t;
     using value_type = T;
+
+private:
+    char _reserved = 0;
 };
 
 template <typename T>
 concept unused_field = std::is_same_v<T, unused<typename T::value_type>>;
 ```
+
+(`_reserved` is never read or written by any `load_field`/`save_field` overload — it exists
+solely to make `unused<T>` a non-aggregate, exactly like `padding_bytes_t`'s fix.)
 
 - [ ] **Step 4: Add the `load_field` overload**
 
