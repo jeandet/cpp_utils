@@ -27,57 +27,44 @@
 #include "../endianness/endianness.hpp"
 #include "../reflexion/reflection.hpp"
 #include "../types/concepts.hpp"
+#include "context.hpp"
 #include "special_fields.hpp"
+#include <cstddef>
+#include <span>
 
 namespace cpp_utils::serde
 {
 
 SPLIT_FIELDS_FW_DECL(constexpr std::size_t, deserialize, );
 
-template <typename input_t, typename field_t, typename parent_composite_t>
-std::size_t load_field(const input_t& input, std::size_t offset, field_t& field,
-    const parent_composite_t& parent_composite);
-
-
 namespace details
 {
 
-    std::size_t _load_value_from_memory(const char* const input_address, std::size_t offset,
+    template <typename input_t>
+    std::span<const std::byte> to_byte_view(const input_t& input)
+    {
+        return std::as_bytes(std::span { input });
+    }
+
+    std::size_t _load_value_from_memory(std::span<const std::byte> input, std::size_t offset,
         types::concepts::fundamental_type auto& dest, const auto& parent_composite)
     {
         using T = std::decay_t<decltype(dest)>;
         using parent_composite_t = std::decay_t<decltype(parent_composite)>;
-        dest = endianness::decode<endianness_t<parent_composite_t>, T>(input_address + offset);
+        dest = endianness::decode<endianness_t<parent_composite_t>, T>(
+            reinterpret_cast<const char*>(input.data()) + offset);
         return offset + sizeof(T);
     }
 
-    std::size_t _load_values_from_memory(const char* const input_address, std::size_t offset,
+    std::size_t _load_values_from_memory(std::span<const std::byte> input, std::size_t offset,
         types::concepts::fundamental_type auto* dest, std::size_t count,
         const auto& parent_composite)
     {
         using T = std::decay_t<decltype(*dest)>;
         using parent_composite_t = std::decay_t<decltype(parent_composite)>;
         endianness::decode_v<endianness_t<parent_composite_t>, T>(
-            input_address + offset, count * sizeof(T), dest);
+            reinterpret_cast<const char*>(input.data()) + offset, count * sizeof(T), dest);
         return offset + sizeof(T) * count;
-    }
-
-    const char* _pointer_to_memory(const auto& input)
-    {
-        using input_t = std::decay_t<decltype(input)>;
-        if constexpr (requires { std::data(input); })
-        {
-            return reinterpret_cast<const char*>(std::data(input));
-        }
-        if constexpr (requires { input.data(); })
-        {
-            return reinterpret_cast<const char*>(input.data());
-        }
-        if constexpr (std::is_pointer_v<input_t>)
-        {
-            return reinterpret_cast<const char*>(input);
-        }
-        throw std::runtime_error("Unsupported input type");
     }
 }
 
@@ -85,32 +72,33 @@ std::size_t load_value(const auto& input, std::size_t offset,
     types::concepts::fundamental_type auto& dest, const auto& parent_composite)
 {
     return details::_load_value_from_memory(
-        details::_pointer_to_memory(input), offset, dest, parent_composite);
+        details::to_byte_view(input), offset, dest, parent_composite);
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, types::concepts::fundamental_type auto& field)
+    std::size_t offset, const auto& context, types::concepts::fundamental_type auto& field)
 {
+    (void)context;
     return load_value(parsing_context, offset, field, parent_composite);
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, types::concepts::enum_type auto& field)
+    std::size_t offset, const auto& context, types::concepts::enum_type auto& field)
 {
     using underlying_t = std::underlying_type_t<std::decay_t<decltype(field)>>;
     underlying_t& underlying_field = reinterpret_cast<underlying_t&>(field);
-    return load_value(parsing_context, offset, underlying_field, parent_composite);
+    return load_field(parent_composite, parsing_context, offset, context, underlying_field);
 }
 
 template <typename field_t>
 concept dyn_array_field = dynamic_array_field<field_t> && !dynamic_array_until_eof_field<field_t>;
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, dyn_array_field auto& array_field)
+    std::size_t offset, const auto& context, dyn_array_field auto& array_field)
 {
     using array_field_t = std::decay_t<decltype(array_field)>;
     using field_t = typename array_field_t::value_type;
-    const auto count = parent_composite.field_size(array_field);
+    const auto count = details::resolve_field_size(parent_composite, array_field, context);
     if (count > 0)
     {
         array_field.resize(count);
@@ -119,13 +107,13 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
             for (std::size_t i = 0; i < count; ++i)
             {
                 offset = deserialize(array_field[i],
-                    std::forward<decltype(parsing_context)>(parsing_context), offset);
+                    std::forward<decltype(parsing_context)>(parsing_context), offset, context);
             }
             return offset;
         }
         else
         {
-            return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
+            return details::_load_values_from_memory(details::to_byte_view(parsing_context),
                 offset, array_field.data(), count, parent_composite);
         }
     }
@@ -137,7 +125,7 @@ concept dy_arr_until_eof_of_const_size = dynamic_array_until_eof_field<std::deca
     && const_size_field<typename std::decay_t<field_t>::value_type>;
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, dy_arr_until_eof_of_const_size auto& array_field)
+    std::size_t offset, const auto& context, dy_arr_until_eof_of_const_size auto& array_field)
 {
     using array_field_t = std::decay_t<decltype(array_field)>;
     using field_t = typename array_field_t::value_type;
@@ -152,13 +140,13 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
             for (std::size_t i = 0; i < count; ++i)
             {
                 offset = deserialize(array_field[i],
-                    std::forward<decltype(parsing_context)>(parsing_context), offset);
+                    std::forward<decltype(parsing_context)>(parsing_context), offset, context);
             }
             return offset;
         }
         else
         {
-            return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context),
+            return details::_load_values_from_memory(details::to_byte_view(parsing_context),
                 offset, array_field.data(), count, parent_composite);
         }
     }
@@ -171,7 +159,7 @@ concept dy_arr_until_eof_of_dyn_size
 
 
 constexpr inline std::size_t load_field(const auto&, auto& parsing_context, std::size_t offset,
-    dy_arr_until_eof_of_dyn_size auto& array_field)
+    const auto& context, dy_arr_until_eof_of_dyn_size auto& array_field)
 {
     using array_field_t = std::decay_t<decltype(array_field)>;
     using field_t = typename array_field_t::value_type;
@@ -181,46 +169,50 @@ constexpr inline std::size_t load_field(const auto&, auto& parsing_context, std:
     {
         array_field.emplace_back(field_t {});
         offset = deserialize(
-            array_field.back(), std::forward<decltype(parsing_context)>(parsing_context), offset);
+            array_field.back(), std::forward<decltype(parsing_context)>(parsing_context), offset,
+            context);
     }
     return offset;
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
-    std::size_t offset, static_array_field auto& array_field)
+    std::size_t offset, const auto& context, static_array_field auto& array_field)
 {
+    (void)context;
     constexpr auto count = std::decay_t<decltype(array_field)>::array_size;
-    return details::_load_values_from_memory(details::_pointer_to_memory(parsing_context), offset,
+    return details::_load_values_from_memory(details::to_byte_view(parsing_context), offset,
         array_field.data(), count, parent_composite);
 }
 
-template <typename composite_t, typename parsing_context_t, typename T>
+template <typename composite_t, typename parsing_context_t, typename context_t, typename T>
 constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t& parsing_context,
-    [[maybe_unused]] std::size_t offset, T&& field)
+    [[maybe_unused]] std::size_t offset, const context_t& context, T&& field)
 {
     using Field_t = std::decay_t<T>;
     constexpr std::size_t count = reflexion::count_members<Field_t>;
     if constexpr (reflexion::can_split_v<Field_t> && (count >= 1))
-        return deserialize(field, parsing_context, offset);
+        return deserialize(field, parsing_context, offset, context);
     else
-        return load_field(r, parsing_context, offset, std::forward<T>(field));
+        return load_field(r, parsing_context, offset, context, std::forward<T>(field));
 }
 
-template <typename composite_t, typename parsing_context_t, typename T, typename... Ts>
+template <typename composite_t, typename parsing_context_t, typename context_t, typename T,
+    typename... Ts>
 constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t& parsing_context,
-    [[maybe_unused]] std::size_t offset, T&& field, Ts&&... fields)
+    [[maybe_unused]] std::size_t offset, const context_t& context, T&& field, Ts&&... fields)
 {
-    offset = load_fields(r, parsing_context, offset, std::forward<T>(field));
-    return load_fields(r, parsing_context, offset, std::forward<Ts>(fields)...);
+    offset = load_fields(r, parsing_context, offset, context, std::forward<T>(field));
+    return load_fields(r, parsing_context, offset, context, std::forward<Ts>(fields)...);
 }
 
 SPLIT_FIELDS(constexpr std::size_t, deserialize, load_fields, );
 
-template <typename composite_t>
-constexpr composite_t deserialize(auto&& parsing_context, [[maybe_unused]] std::size_t offset = 0)
+template <typename composite_t, typename context_t = no_context>
+constexpr composite_t deserialize(auto&& parsing_context, [[maybe_unused]] std::size_t offset = 0,
+    const context_t& context = context_t {})
 {
     composite_t r;
-    deserialize(r, std::forward<decltype(parsing_context)>(parsing_context), offset);
+    deserialize(r, std::forward<decltype(parsing_context)>(parsing_context), offset, context);
     return r;
 }
 

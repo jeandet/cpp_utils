@@ -27,6 +27,7 @@ headers = files(
         'include/cpp_utils/io/memory_mapped_file.hpp',
         'include/cpp_utils/lifetime/scope_leaving_guards.hpp',
         'include/cpp_utils/reflexion/reflection.hpp',
+        'include/cpp_utils/serde/context.hpp',
         'include/cpp_utils/serde/deserialization.hpp',
         'include/cpp_utils/serde/special_fields.hpp',
         'include/cpp_utils/serde/serde.hpp',

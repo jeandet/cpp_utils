@@ -21,7 +21,7 @@ TEST_CASE("Serde", "[simple structures]")
         std::string buffer { "cd" };
         WHEN("Deserializing it")
         {
-            auto s = cpp_utils::serde::deserialize<two_chars>(buffer.c_str());
+            auto s = cpp_utils::serde::deserialize<two_chars>(buffer);
             THEN("It should have the right values")
             {
                 REQUIRE(s.a == 'c');
@@ -62,7 +62,7 @@ TEST_CASE("Serde", "[nested structs]")
         char c;
     };
     std::string buffer { "abc" };
-    auto s = cpp_utils::serde::deserialize<struct2>(buffer.c_str());
+    auto s = cpp_utils::serde::deserialize<struct2>(buffer);
     REQUIRE(s.s.a == 'a');
     REQUIRE(s.s.b == 'b');
     REQUIRE(s.c == 'c');
