@@ -1660,6 +1660,20 @@ Expected: **compile failure** — `cpp_utils::serde::runtime_size` doesn't exist
 
 - [ ] **Step 3: Create `runtime_size.hpp`**
 
+**Update (found during Task 4, applying the lesson here before it recurs):** Task 4 discovered
+that a convenience overload sharing its name with a `SPLIT_FIELDS`-generated worker of matching
+arity causes either infinite recursion or silent argument misalignment, depending on the call
+shape — C++ partial ordering prefers the more-specialized fixed-arity convenience overload over
+the macro's variadic one, so recursive calls resolve back to the wrong function. Task 4 fixed
+this for `serialize` by naming the macro-generated worker `serialize_fields` and keeping only a
+thin convenience wrapper under the public name. Apply the same split here: the macro generates
+`runtime_size_fields`, and a separate, explicit `runtime_size` convenience function (with a
+defaulted `context`, the same way `deserialize<composite_t>` and `serialize` already default it)
+is the only thing named `runtime_size`. Without this split, `runtime_size(value)` (a single
+argument — this task's own tests call it that way, since computing a size never needs a value
+that doesn't already exist) wouldn't compile at all against a bare macro-generated function that
+requires `context` as a mandatory second parameter.
+
 Create `include/cpp_utils/serde/runtime_size.hpp` (copy the MIT license header block from `serialization.hpp` verbatim, then):
 
 ```cpp
@@ -1671,7 +1685,7 @@ Create `include/cpp_utils/serde/runtime_size.hpp` (copy the MIT license header b
 namespace cpp_utils::serde
 {
 
-SPLIT_FIELDS_FW_DECL(constexpr std::size_t, runtime_size, const);
+SPLIT_FIELDS_FW_DECL(constexpr std::size_t, runtime_size_fields, const);
 
 constexpr inline std::size_t field_runtime_size(
     const auto&, const auto&, const types::concepts::fundamental_type auto& field)
@@ -1736,7 +1750,7 @@ constexpr inline std::size_t fields_runtime_size(
     using Field_t = std::decay_t<T>;
     constexpr std::size_t count = reflexion::count_members<Field_t>;
     if constexpr (reflexion::can_split_v<Field_t> && (count >= 1))
-        return runtime_size(field, context);
+        return runtime_size_fields(field, context);
     else
         return field_runtime_size(r, context, std::forward<T>(field));
 }
@@ -1749,7 +1763,14 @@ constexpr inline std::size_t fields_runtime_size(
         + fields_runtime_size(r, context, std::forward<Ts>(fields)...);
 }
 
-SPLIT_FIELDS(constexpr std::size_t, runtime_size, fields_runtime_size, const);
+SPLIT_FIELDS(constexpr std::size_t, runtime_size_fields, fields_runtime_size, const);
+
+template <typename composite_t, typename context_t = no_context>
+constexpr std::size_t runtime_size(
+    const composite_t& value, const context_t& context = context_t {})
+{
+    return runtime_size_fields(value, context);
+}
 
 }
 ```
