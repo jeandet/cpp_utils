@@ -29,6 +29,7 @@
 #include "../types/concepts.hpp"
 #include "context.hpp"
 #include "special_fields.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 
@@ -129,6 +130,19 @@ constexpr inline std::size_t save_field(const auto&, byte_sink auto& sink, std::
     details::ensure_size(sink, offset + size);
     std::memset(reinterpret_cast<char*>(sink.data()) + offset, value, size);
     return offset + size;
+}
+
+constexpr inline std::size_t save_field(const auto&, byte_sink auto& sink, std::size_t offset,
+    const auto&, const bounded_string_field auto& field)
+{
+    using field_t = std::decay_t<decltype(field)>;
+    details::ensure_size(sink, offset + field_t::max_len);
+    auto* out = reinterpret_cast<char*>(sink.data()) + offset;
+    const auto copy_len = std::min(field.value.size(), field_t::max_len);
+    std::memcpy(out, field.value.data(), copy_len);
+    if (copy_len < field_t::max_len)
+        std::memset(out + copy_len, 0, field_t::max_len - copy_len);
+    return offset + field_t::max_len;
 }
 
 template <typename composite_t, typename sink_t, typename context_t, typename T>

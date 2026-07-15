@@ -191,6 +191,21 @@ constexpr inline std::size_t load_field(const auto&, auto&, std::size_t offset, 
     return offset + size;
 }
 
+constexpr inline std::size_t load_field(const auto&, auto& parsing_context, std::size_t offset,
+    const auto&, bounded_string_field auto& field)
+{
+    using field_t = std::decay_t<decltype(field)>;
+    const auto bytes = details::to_byte_view(parsing_context);
+    std::size_t len = 0;
+    while (len < field_t::max_len
+        && std::to_integer<unsigned char>(bytes[offset + len]) != 0)
+        ++len;
+    field.value = std::string {
+        reinterpret_cast<const char*>(bytes.data()) + offset, len
+    };
+    return offset + field_t::max_len;
+}
+
 template <typename composite_t, typename parsing_context_t, typename context_t, typename T>
 constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t& parsing_context,
     [[maybe_unused]] std::size_t offset, const context_t& context, T&& field)

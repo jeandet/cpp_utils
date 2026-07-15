@@ -107,6 +107,11 @@ tests = [
         'sources': ['reflexion/test_count_members.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
+    {
+        'name':'TestBoundedString',
+        'sources': ['serde/test_bounded_string.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
 ]
 
 foreach unit_test : tests

@@ -27,6 +27,7 @@
 #include "../endianness/endianness.hpp"
 #include "../reflexion/reflection.hpp"
 #include <limits>
+#include <string>
 #include <vector>
 
 namespace cpp_utils::serde
@@ -38,6 +39,7 @@ struct padding_bytes_t
 {
     using do_not_split = reflexion::do_not_split_t;
     static constexpr std::size_t padding_size = size;
+    static constexpr std::size_t wire_size = size;
     static constexpr uint8_t padding_value = value;
 
 private:
@@ -67,6 +69,18 @@ public:
 
 template <typename T>
 concept static_array_field = std::is_same_v<T, static_array<typename T::value_type, T::array_size>>;
+
+template <std::size_t N>
+struct bounded_string
+{
+    using do_not_split = reflexion::do_not_split_t;
+    static constexpr std::size_t wire_size = N;
+    static constexpr std::size_t max_len = N;
+    std::string value;
+};
+
+template <typename T>
+concept bounded_string_field = std::is_same_v<T, bounded_string<T::max_len>>;
 
 template <std::size_t ID, typename field_t>
 struct dynamic_array
@@ -121,7 +135,7 @@ concept dynamic_array_until_eof_field
 template <typename field_t>
 consteval bool _has_const_size()
 {
-    if constexpr (std::is_compound_v<field_t>)
+    if constexpr (std::is_compound_v<field_t> && reflexion::can_split_v<field_t>)
     {
         return reflexion::composite_have_const_size<field_t>();
     }

@@ -433,6 +433,8 @@ template <typename field_t>
     static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
     if constexpr (std::is_bounded_array_v<Field_t>)
         return sizeof(Field_t) * std::extent_v<Field_t>;
+    if constexpr (requires { Field_t::wire_size; })
+        return Field_t::wire_size;
     if constexpr (can_split_v<Field_t>)
         return composite_size<Field_t>();
     return sizeof(Field_t);
