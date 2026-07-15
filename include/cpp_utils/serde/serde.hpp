@@ -27,3 +27,4 @@
 #include "special_fields.hpp"
 #include "deserialization.hpp"
 #include "serialization.hpp"
+#include "runtime_size.hpp"

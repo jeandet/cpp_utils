@@ -30,6 +30,7 @@ headers = files(
         'include/cpp_utils/serde/context.hpp',
         'include/cpp_utils/serde/deserialization.hpp',
         'include/cpp_utils/serde/serialization.hpp',
+        'include/cpp_utils/serde/runtime_size.hpp',
         'include/cpp_utils/serde/special_fields.hpp',
         'include/cpp_utils/serde/serde.hpp',
         'include/cpp_utils/strings/algorithms.hpp',
