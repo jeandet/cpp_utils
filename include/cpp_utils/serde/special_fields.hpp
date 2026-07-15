@@ -162,6 +162,30 @@ template <typename field_t>
 concept dynamic_array_of_constant_size_field
     = dynamic_array_field<field_t> && const_size_field<typename field_t::value_type>;
 
+namespace details
+{
+    struct empty_base
+    {
+    };
+    struct dyn_size_base
+    {
+        using dyn_size_field_tag = reflexion::dyn_size_field_tag_t;
+    };
+}
+
+template <typename T>
+struct unused : std::conditional_t<!const_size_field<T>, details::dyn_size_base, details::empty_base>
+{
+    using do_not_split = reflexion::do_not_split_t;
+    using value_type = T;
+
+private:
+    char _reserved = 0;
+};
+
+template <typename T>
+concept unused_field = std::is_same_v<T, unused<typename T::value_type>>;
+
 template <typename composite_t>
 consteval auto _endianness()
 {
