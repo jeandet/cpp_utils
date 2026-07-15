@@ -24,13 +24,6 @@ if cpp_compiler.compiles(concepts_test_fragment)
 else
     warning('Concepts are not supported by the compiler')
 endif
-
-
-if(target_machine.endian() == 'big')
-    conf_data.set('CPP_UTILS_BIG_ENDIAN', true)
-else
-    conf_data.set('CPP_UTILS_LITTLE_ENDIAN', true)
-endif
 configure_file(input : files('../../config.h.in'),
                output : 'config.h',
                install : true,

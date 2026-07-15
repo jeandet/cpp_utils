@@ -21,18 +21,13 @@
 --                     Mail : alexis.jeandet@lpp.polytechnique.fr
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include "config.h"
-#ifdef CPP_UTILS_BIG_ENDIAN
-inline const bool host_is_big_endian = true;
-inline const bool host_is_little_endian = false;
-#else
-#ifdef CPP_UTILS_LITTLE_ENDIAN
-inline const bool host_is_big_endian = false;
-inline const bool host_is_little_endian = true;
-#else
-#error "Can't find if platform is either big or little endian"
-#endif
-#endif
+#include <bit>
+
+inline constexpr bool host_is_big_endian = std::endian::native == std::endian::big;
+inline constexpr bool host_is_little_endian = std::endian::native == std::endian::little;
+
+static_assert(host_is_big_endian != host_is_little_endian,
+    "cpp_utils::endianness: mixed-endian hosts are not supported");
 
 #ifdef __GNUC__
 #define bswap16 __builtin_bswap16
