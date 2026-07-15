@@ -26,3 +26,4 @@
 #pragma once
 #include "special_fields.hpp"
 #include "deserialization.hpp"
+#include "serialization.hpp"

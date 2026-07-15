@@ -184,6 +184,13 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
         array_field.data(), count, parent_composite);
 }
 
+template <std::size_t size, uint8_t value>
+constexpr inline std::size_t load_field(const auto&, auto&, std::size_t offset, const auto&,
+    padding_bytes_t<size, value>&)
+{
+    return offset + size;
+}
+
 template <typename composite_t, typename parsing_context_t, typename context_t, typename T>
 constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t& parsing_context,
     [[maybe_unused]] std::size_t offset, const context_t& context, T&& field)

@@ -39,6 +39,13 @@ struct padding_bytes_t
     using do_not_split = reflexion::do_not_split_t;
     static constexpr std::size_t padding_size = size;
     static constexpr uint8_t padding_value = value;
+
+private:
+    // Keeps padding_bytes_t a non-aggregate (single opaque slot for
+    // reflexion::count_members, same trick static_array/dynamic_array rely on) instead of an
+    // empty aggregate, which count_members's member-arity probe cannot handle when
+    // padding_bytes_t isn't the composite's last member.
+    char _reserved = 0;
 };
 
 template <typename field_t, std::size_t sz>

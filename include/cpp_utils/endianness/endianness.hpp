@@ -208,4 +208,41 @@ inline void decode_v(const auto* data, std::size_t size, value_t* output)
         reinterpret_cast<const _value_t*>(data), count, reinterpret_cast<_value_t*>(output));
 }
 
+template <typename dst_endianess_t, typename T>
+HEDLEY_NON_NULL(2)
+inline void encode(T value, char* output)
+{
+    if constexpr (sizeof(T) > 1)
+    {
+        if constexpr (!std::is_same_v<host_endianness_t, dst_endianess_t>)
+        {
+            value = details::byte_swap<T>(value);
+        }
+        std::memcpy(output, &value, sizeof(T));
+    }
+    else
+    {
+        *output = static_cast<char>(value);
+    }
+}
+
+template <typename dst_endianess_t, typename value_t>
+HEDLEY_NON_NULL(1)
+inline void encode_v(const value_t* data, std::size_t count, char* output)
+{
+    if constexpr (sizeof(value_t) > 1 and not std::is_same_v<host_endianness_t, dst_endianess_t>)
+    {
+        for (auto i = 0UL; i < count; i++)
+        {
+            const auto swapped = details::byte_swap(data[i]);
+            std::memcpy(output + i * sizeof(value_t), &swapped, sizeof(value_t));
+        }
+    }
+    else
+    {
+        if (count > 0)
+            std::memcpy(output, data, count * sizeof(value_t));
+    }
+}
+
 }

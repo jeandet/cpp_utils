@@ -98,6 +98,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestSerialization',
+        'sources': ['serde/test_serialization.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestCountMembers',
         'sources': ['reflexion/test_count_members.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
