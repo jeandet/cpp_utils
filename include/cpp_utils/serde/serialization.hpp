@@ -113,6 +113,18 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
 }
 
 constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+    std::size_t offset, const auto& context, const dynamic_array_bytes_field auto& array_field)
+{
+    (void)context;
+    using array_field_t = std::decay_t<decltype(array_field)>;
+    using field_t = typename array_field_t::value_type;
+    const auto count = array_field.size();
+    if (count > 0)
+        details::_save_values_to_memory(sink, offset, array_field.data(), count, parent_composite);
+    return offset + sizeof(field_t) * count;
+}
+
+constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
     std::size_t offset, const auto& context, const static_array_field auto& array_field)
 {
     (void)context;

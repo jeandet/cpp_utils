@@ -125,6 +125,15 @@ public:
 template <typename T>
 concept dynamic_array_field = std::is_same_v<T, dynamic_array<T::id, typename T::value_type>>;
 
+template <std::size_t ID, typename field_t>
+struct dynamic_array_bytes : dynamic_array<ID, field_t>
+{
+};
+
+template <typename T>
+concept dynamic_array_bytes_field
+    = std::is_same_v<T, dynamic_array_bytes<T::id, typename T::value_type>>;
+
 template <typename T>
 using dynamic_array_until_eof = dynamic_array<std::numeric_limits<std::size_t>::max(), T>;
 

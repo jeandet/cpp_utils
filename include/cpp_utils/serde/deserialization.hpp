@@ -120,6 +120,22 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     return offset;
 }
 
+constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
+    std::size_t offset, const auto& context, dynamic_array_bytes_field auto& array_field)
+{
+    using array_field_t = std::decay_t<decltype(array_field)>;
+    using field_t = typename array_field_t::value_type;
+    const auto bytes = details::resolve_field_size(parent_composite, array_field, context);
+    const auto count = bytes / sizeof(field_t);
+    if (count > 0)
+    {
+        array_field.resize(count);
+        details::_load_values_from_memory(details::to_byte_view(parsing_context), offset,
+            array_field.data(), count, parent_composite);
+    }
+    return offset + bytes;
+}
+
 template <typename field_t>
 concept dy_arr_until_eof_of_const_size = dynamic_array_until_eof_field<std::decay_t<field_t>>
     && const_size_field<typename std::decay_t<field_t>::value_type>;

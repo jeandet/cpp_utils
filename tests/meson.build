@@ -112,6 +112,11 @@ tests = [
         'sources': ['serde/test_bounded_string.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
+    {
+        'name':'TestDynamicArrayBytes',
+        'sources': ['serde/test_dynamic_array_bytes.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
 ]
 
 foreach unit_test : tests
