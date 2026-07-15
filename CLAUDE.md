@@ -39,11 +39,11 @@ Dependencies are pulled via Meson subprojects/wraps (`subprojects/*.wrap`, vendo
 (v3, tests only). No network access is needed if the wrap cache is present.
 
 `include/cpp_utils/meson.build` generates `config.h` from `config.h.in` at configure time — it
-defines `CPP_UTILS_VERSION` and exactly one of `CPP_UTILS_BIG_ENDIAN` /
-`CPP_UTILS_LITTLE_ENDIAN` based on `target_machine.endian()`, and whether the compiler supports
-concepts (`CPP_UTILS_CONCEPTS_SUPPORTED`). Several headers (`endianness.hpp`,
-`types/concepts.hpp`) `#include "config.h"` and only work post-configure — don't expect them to
-compile standalone outside the Meson build.
+defines `CPP_UTILS_VERSION` and whether the compiler supports concepts
+(`CPP_UTILS_CONCEPTS_SUPPORTED`). `types/concepts.hpp` `#include`s `config.h` and only works
+post-configure — don't expect it to compile standalone outside the Meson build. Host endianness
+detection (`endianness.hpp`) no longer depends on `config.h` — it's computed directly from
+`std::endian::native` (`<bit>`, C++20).
 
 CI (`.github/workflows/CI.yml`) builds+tests on ubuntu/windows/macos-13/macos-14 via
 `meson setup && ninja && ninja test`. `.github/workflows/tests-with-coverage.yml` runs an
@@ -59,7 +59,7 @@ Each subdirectory of `include/cpp_utils/` is an independent domain; headers are 
 to the `headers` list in the root `meson.build` (new public headers must be added there too):
 
 - `reflexion/` — the foundation the rest of the library builds on (see below).
-- `serde/` — binary deserialization built on top of `reflexion` + `endianness`.
+- `serde/` — binary (de)serialization built on top of `reflexion` + `endianness`.
 - `endianness/` — compile-time-aware byte-swapping and little/big-endian decode helpers.
 - `types/` — concepts (`concepts.hpp`), member/method/type detection idioms
   (`detectors.hpp`), smart pointer helpers, Qt<->native type traits (`qt_types.hpp`), integer
@@ -158,10 +158,15 @@ this.
 
 ### Endianness (`endianness/endianness.hpp`)
 
-Host endianness is a build-time fact baked into `config.h` by Meson (not detected at runtime).
+Host endianness (`host_is_big_endian`/`host_is_little_endian`) is computed via
+`std::endian::native` (`<bit>`, C++20) — no longer a Meson-generated `config.h` macro.
 `decode<src_endianness_t, T>(ptr)` byte-swaps only when `src_endianness_t` differs from
-`host_endianness_t`, and is a no-op for single-byte types. `decode_v` is the bulk/array variant
-used by `serde` for array fields.
+`host_endianness_t`, and is a no-op for single-byte types; `encode<dst_endianness_t, T>(value,
+output)` is the write-side counterpart used by `serde::serialize`. `decode_v`/`encode_v` are the
+bulk/array variants used by `serde` for array fields. Byte-swapping itself is still done via
+`__builtin_bswap*`/`_byteswap_*` — deliberately not `std::byteswap` (C++23), since this project
+targets C++20 only (the codebase must build across a wide toolchain matrix, including
+`cibuildwheel`-driven wheel builds for downstream consumers).
 
 ### Tests
 
