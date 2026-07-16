@@ -100,6 +100,14 @@ TEST_CASE("Containers algorithms", "[Containers]")
 
     TEST_CONTAINER_CONTAINS(map, associative_init, char)
 
+    REQUIRE(contains(std::string { "hello" }, 'e'));
+    REQUIRE(!contains(std::string { "hello" }, 'z'));
+
+    std::vector<std::shared_ptr<int>> shared_ptrs { std::make_shared<int>(1),
+        std::make_shared<int>(2), std::make_shared<int>(3) };
+    REQUIRE(index_of(shared_ptrs, shared_ptrs[1]) == 1);
+    REQUIRE(index_of(shared_ptrs, shared_ptrs[1].get()) == 1);
+
 
     TEST_SPLIT({ "/part1/part2/part3" }, ARG({ "part1", "part2", "part3" }));
     TEST_SPLIT({ "" }, ARG({}));

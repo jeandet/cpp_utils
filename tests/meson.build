@@ -78,6 +78,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestNomap',
+        'sources': ['containers/test_nomap.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestStringsAlgs',
         'sources': ['strings/test_strings_algorithms.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
@@ -90,6 +95,11 @@ tests = [
     {
         'name':'TestLifetime',
         'sources': ['lifetime/test_scope_leaving_guards.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
+        'name':'TestMemoryMappedFile',
+        'sources': ['io/test_memory_mapped_file.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {

@@ -65,7 +65,7 @@ struct nomap_node : public std::pair<Key, details::base_type_t<T>>
 
     friend void swap(nomap_node& lhs, nomap_node& rhs)
     {
-        std::swap(lhs.first, rhs.second);
+        std::swap(lhs.first, rhs.first);
         std::swap(lhs.second, rhs.second);
         std::swap(lhs.p_empty, rhs.p_empty);
     }
@@ -238,7 +238,7 @@ struct nomap
 
     inline iterator erase(const_iterator first, const_iterator last)
     {
-        if (first != cend() and last != cend() and first <= last)
+        if (first <= last and last <= cend())
         {
             auto next_idx = (first - cbegin());
             auto count = last - first;
@@ -247,7 +247,7 @@ struct nomap
                 std::swap(p_nodes[next_idx], p_nodes.back());
                 p_nodes.pop_back();
             }
-            return cbegin() + next_idx;
+            return begin() + next_idx;
         }
         return end();
     }

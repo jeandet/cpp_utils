@@ -46,6 +46,16 @@
 namespace cpp_utils::io
 {
 
+#ifdef USE_MMAP
+namespace details
+{
+    inline char* checked_mmap(void* result) noexcept
+    {
+        return (result == MAP_FAILED) ? nullptr : static_cast<char*>(result);
+    }
+}
+#endif
+
 struct memory_mapped_file
 {
 #ifdef USE_MMAP
@@ -70,10 +80,12 @@ struct memory_mapped_file
 #ifdef USE_MMAP
                 if (fd = open(path.c_str(), O_RDONLY, static_cast<mode_t>(0600)); fd != -1)
                 {
-
+                    mapped_file = details::checked_mmap(mmap(
+                        nullptr, this->f_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0UL));
+                    if (mapped_file == nullptr)
                     {
-                        mapped_file = static_cast<char*>(mmap(
-                            nullptr, this->f_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0UL));
+                        close(fd);
+                        fd = -1;
                     }
                 }
 #endif
