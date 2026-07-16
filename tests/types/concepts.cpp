@@ -1,5 +1,6 @@
 #define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch2/catch_test_macros.hpp>
+#include <io/memory_mapped_file.hpp>
 #include <types/concepts.hpp>
 #include <vector>
 #include <memory>
@@ -24,4 +25,8 @@ TEST_CASE("Concepts", "[types]")
     REQUIRE(!test_function(std::vector { 1.0, 2.0, 3.0 }));
     REQUIRE(test_function(std::data(std::vector { 1.0, 2.0, 3.0 })));
     REQUIRE(!test_function(std::make_unique<double>()));
+
+    REQUIRE(random_access_buffer<cpp_utils::io::memory_mapped_file>);
+    REQUIRE(!random_access_buffer<int>);
+    REQUIRE(!random_access_buffer<std::vector<int>>);
 }

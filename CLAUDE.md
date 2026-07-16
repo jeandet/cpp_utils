@@ -70,7 +70,11 @@ to the `headers` list in the root `meson.build` (new public headers must be adde
   be templated over user-supplied node-like types.
 - `strings/` — small string algorithms.
 - `lifetime/` — RAII scope-leaving guards (run code on scope exit).
-- `io/` — `memory_mapped_file`.
+- `io/` — `memory_mapped_file` (file-backed) and `buffer_view` (non-owning view over an
+  in-memory buffer). Both satisfy `types::concepts::random_access_buffer`
+  (`read`/`view`/`size`/`is_valid`) and `std::ranges::contiguous_range`, so either can be
+  passed directly to `serde::deserialize` or used interchangeably wherever a byte buffer is
+  expected.
 - `cpp_utils_qt/` — Qt-specific specializations (pointer types, tree traits, converters). Kept
   separate from the core headers so consumers who don't use Qt never pull in Qt headers.
 

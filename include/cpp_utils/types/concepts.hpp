@@ -68,5 +68,19 @@ concept contiguous_sequence_container = container<T> &&
 template <class T>
 concept bounded_array = std::is_bounded_array_v<T>;
 
+/** random_access_buffer concept: a read-only byte buffer that can copy an arbitrary
+ * (offset, size) range into a caller-owned destination (read), hand back a zero-copy
+ * pointer at an arbitrary offset (view), report its size, and report whether it was
+ * successfully opened/constructed (is_valid). Satisfied by cpp_utils::io::memory_mapped_file
+ * and cpp_utils::io::buffer_view. */
+template <class T>
+concept random_access_buffer = requires(const T& t, char* dest, std::size_t offset,
+    std::size_t size) {
+    { t.read(dest, offset, size) };
+    { t.view(offset) };
+    { t.size() } -> std::convertible_to<std::size_t>;
+    { t.is_valid() } -> std::convertible_to<bool>;
+};
+
 } // namespace cpp_utils::types::concepts
 

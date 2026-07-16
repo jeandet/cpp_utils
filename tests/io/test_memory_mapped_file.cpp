@@ -54,6 +54,28 @@ TEST_CASE("memory_mapped_file::as_span exposes its data as a std::span", "[io]")
     std::filesystem::remove(path);
 }
 
+TEST_CASE("memory_mapped_file feeds serde::deserialize directly, with no as_span() needed", "[io]")
+{
+    struct wire_pair
+    {
+        uint8_t a;
+        uint8_t b;
+    };
+    auto path = std::filesystem::temp_directory_path() / "cpp_utils_mmf_bare_serde_test.bin";
+    {
+        std::ofstream out(path, std::ios::binary);
+        char raw[2] = { 5, 9 };
+        out.write(raw, 2);
+    }
+
+    memory_mapped_file f { path.string() };
+    auto value = cpp_utils::serde::deserialize<wire_pair>(f);
+    REQUIRE(value.a == 5);
+    REQUIRE(value.b == 9);
+
+    std::filesystem::remove(path);
+}
+
 TEST_CASE("memory_mapped_file::as_span feeds serde::deserialize directly", "[io]")
 {
     struct wire_pair

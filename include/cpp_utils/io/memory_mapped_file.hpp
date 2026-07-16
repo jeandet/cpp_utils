@@ -28,9 +28,12 @@
 #include <cstddef>
 #include <cstring>
 #include <filesystem>
+#include <ranges>
 #include <span>
 #include <string>
 #include <type_traits>
+
+#include "../types/concepts.hpp"
 #if __has_include(<sys/mman.h>)
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -121,15 +124,15 @@ struct memory_mapped_file
         }
     }
 
-    auto read(const std::size_t offset, const std::size_t) { return mapped_file + offset; }
+    auto read(const std::size_t offset, const std::size_t) const { return mapped_file + offset; }
 
     template <std::size_t size>
-    auto read(const std::size_t offset)
+    auto read(const std::size_t offset) const
     {
         return mapped_file + offset;
     }
 
-    void read(char* dest, const std::size_t offset, const std::size_t size)
+    void read(char* dest, const std::size_t offset, const std::size_t size) const
     {
         std::memcpy(dest, mapped_file + offset, size);
     }
@@ -141,6 +144,9 @@ struct memory_mapped_file
     }
 
     auto view(const std::size_t offset) const { return mapped_file + offset; }
+
+    auto begin() const { return mapped_file; }
+    auto end() const { return mapped_file + f_size; }
 
     auto size() const { return this->f_size; }
     auto data() const { return view(0); }
@@ -162,17 +168,7 @@ struct memory_mapped_file
     }
 };
 
-}
+static_assert(std::ranges::contiguous_range<memory_mapped_file>);
+static_assert(types::concepts::random_access_buffer<memory_mapped_file>);
 
-namespace std
-{
-std::size_t size(const cpp_utils::io::memory_mapped_file& arr)
-{
-    return arr.size();
-}
-
-char* data(cpp_utils::io::memory_mapped_file& arr)
-{
-    return arr.view(0);
-}
 }
