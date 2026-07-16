@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **C++20 only** — no `std::byteswap`, `if consteval`, deducing-this, `std::expected`, or any other C++23-only construct anywhere in new/modified code. Driven by CDFpp's need to build wheels via `cibuildwheel` across manylinux/macOS/Windows, where C++23 support is not uniformly reliable.
+- **C++20 only** — no `std::byteswap`, `if consteval`, deducing-this, `std::expected`, or any other C++23-only construct anywhere in new/modified code. Both `cpp_utils` and CDFpp hard-pin `cpp_std=c++20` in `meson.build` — this is a flat compile-time ceiling from the build config, not a toolchain-support question.
 - **31-member cap on `SPLIT_FIELDS` stays unchanged** — types with more members must hard-error at compile time, never silently truncate.
 - **No buffer bounds-checking** — callers are assumed to have already validated buffer size before calling into the engine, matching current behavior. Do not add runtime range checks as part of this plan.
 - Every new/modified header keeps the existing MIT license comment block used throughout `cpp_utils` (copy verbatim from any existing header in the same directory — do not paraphrase it).

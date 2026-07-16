@@ -61,12 +61,12 @@ path, so CDFpp's record loading *and* saving could eventually both depend on it.
 ## Constraints
 
 **C++20 only, strictly.** No `std::byteswap`, `if consteval`, deducing-this,
-`std::expected`, or any other C++23-only construct anywhere in the new engine. This is a
-hard constraint driven by CDFpp's need to build Python wheels via `cibuildwheel` across
-manylinux, macOS (Intel + Apple Silicon), and Windows — C++23 library support is not
-uniformly reliable across that matrix, while C++20 (concepts, `consteval`, `std::span`,
-`<bit>`) already is, and is the project's existing baseline
-(`meson.build`: `cpp_std=c++20`).
+`std::expected`, or any other C++23-only construct anywhere in the new engine. Both
+`cpp_utils` and CDFpp hard-pin `cpp_std=c++20` in their `meson.build` — this isn't a
+matter of toolchain support varying across `cibuildwheel`'s manylinux/macOS/Windows
+matrix, it's a flat compile-time ceiling from the build configuration itself. Raising it
+would be a separate, deliberate decision (affecting both projects, and CDFpp's wheel
+build matrix), not something this engine should do unilaterally.
 
 ## Design
 
