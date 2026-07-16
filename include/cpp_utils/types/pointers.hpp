@@ -22,6 +22,8 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
+#include "detectors.hpp"
+
 #include <memory>
 #include <type_traits>
 
@@ -41,47 +43,9 @@ struct is_dereferencable<T, decltype(*std::declval<T>(), void())> : std::true_ty
 template <class T>
 static inline constexpr bool is_dereferencable_v = is_dereferencable<T>::value;
 
-template <typename T, typename = void>
-struct is_std_shared_ptr : std::false_type
-{
-};
-
-template <typename T>
-struct is_std_shared_ptr<T, decltype(std::declval<typename T::element_type>(), void())>
-        : std::is_same<T, std::shared_ptr<typename T::element_type>>
-{
-};
-
-template <class T>
-static inline constexpr bool is_std_shared_ptr_v = is_std_shared_ptr<T>::value;
-
-template <typename T, typename = void>
-struct is_std_unique_ptr : std::false_type
-{
-};
-
-template <typename T>
-struct is_std_unique_ptr<T, decltype(std::declval<typename T::element_type>(), void())>
-        : std::is_same<T, std::unique_ptr<typename T::element_type>>
-{
-};
-
-template <class T>
-static inline constexpr bool is_std_unique_ptr_v = is_std_unique_ptr<T>::value;
-
-template <typename T, typename = void>
-struct is_std_weak_ptr : std::false_type
-{
-};
-
-template <typename T>
-struct is_std_weak_ptr<T, decltype(std::declval<typename T::element_type>(), void())>
-        : std::is_same<T, std::weak_ptr<typename T::element_type>>
-{
-};
-
-template <class T>
-static inline constexpr bool is_std_weak_ptr_v = is_std_weak_ptr<T>::value;
+IS_TEMPLATE_T(is_std_shared_ptr, std::shared_ptr)
+IS_TEMPLATE_T(is_std_unique_ptr, std::unique_ptr)
+IS_TEMPLATE_T(is_std_weak_ptr, std::weak_ptr)
 
 
 template <typename T>

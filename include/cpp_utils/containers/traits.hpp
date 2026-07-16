@@ -53,12 +53,12 @@ struct is_std_array<std::array<T, N>> : std::true_type
 template <typename T>
 static inline constexpr bool is_std_array_v = is_std_array<T>::value;
 
-#define __iterator_type decltype(std::begin(std::declval<T>()))
+#define CPP_UTILS_ITERATOR_TYPE decltype(std::begin(std::declval<T>()))
 
-#define __item_type decltype(*std::declval<__iterator_type>())
+#define CPP_UTILS_ITEM_TYPE decltype(*std::declval<CPP_UTILS_ITERATOR_TYPE>())
 
 HAS_METHOD(has_clear_method, clear)
-HAS_METHOD(has_erase_method, erase, __item_type)
+HAS_METHOD(has_erase_method, erase, CPP_UTILS_ITEM_TYPE)
 HAS_METHOD(has_front_method, front)
 HAS_METHOD(has_begin_method, begin)
 HAS_METHOD(has_end_method, end)
@@ -68,8 +68,11 @@ HAS_METHOD(has_swap_method, swap, T&)
 HAS_METHOD(has_size_method, size)
 HAS_METHOD(has_max_size_method, max_size)
 HAS_METHOD(has_empty_method, empty)
-HAS_METHOD(has_insert_method, insert, __iterator_type, __item_type)
+HAS_METHOD(has_insert_method, insert, CPP_UTILS_ITERATOR_TYPE, CPP_UTILS_ITEM_TYPE)
 HAS_METHOD(has_at_method, at, int)
+
+#undef CPP_UTILS_ITEM_TYPE
+#undef CPP_UTILS_ITERATOR_TYPE
 
 HAS_TYPE(value_type)
 HAS_TYPE(reference)

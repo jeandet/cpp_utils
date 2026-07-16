@@ -99,6 +99,10 @@ namespace details
         return bswap64(v);
     }
 
+#undef bswap16
+#undef bswap32
+#undef bswap64
+
     template <typename T, std::size_t s = sizeof(T)>
     T byte_swap(T value)
     {

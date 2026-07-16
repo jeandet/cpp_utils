@@ -137,44 +137,36 @@ struct nomap
 
     [[nodiscard]] inline T& at(const key_type& key)
     {
-        for (auto i = 0UL; i < std::size(p_nodes); i++)
-        {
-            if (p_nodes[i].first == key)
-                return p_nodes[i].second;
-        }
+        auto it = find(key);
+        if (it != end())
+            return it->second;
 
         throw std::out_of_range { "Key not found" };
     }
 
     [[nodiscard]] inline const T& at(const key_type& key) const
     {
-        for (auto i = 0UL; i < std::size(p_nodes); i++)
-        {
-            if (p_nodes[i].first == key)
-                return p_nodes[i].second;
-        }
+        auto it = find(key);
+        if (it != cend())
+            return it->second;
 
         throw std::out_of_range { "Key not found" };
     }
 
     [[nodiscard]] inline T& operator[](const key_type& key)
     {
-        for (auto i = 0UL; i < std::size(p_nodes); i++)
-        {
-            if (p_nodes[i].first == key)
-                return p_nodes[i].second;
-        }
+        auto it = find(key);
+        if (it != end())
+            return it->second;
         auto& node = p_nodes.emplace_back(key, mapped_type {});
         return node.second;
     }
 
     [[nodiscard]] inline T& operator[](key_type&& key)
     {
-        for (auto i = 0UL; i < std::size(p_nodes); i++)
-        {
-            if (p_nodes[i].first == key)
-                return p_nodes[i].second;
-        }
+        auto it = find(key);
+        if (it != end())
+            return it->second;
         auto& node = p_nodes.emplace_back(std::move(key), mapped_type {});
         return node.second;
     }

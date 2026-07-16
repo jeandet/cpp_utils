@@ -25,13 +25,6 @@
 #include <memory>
 namespace cpp_utils::lifetime
 {
-#if __cplusplus >= 202300
-template <typename T, auto callback_t>
-using scope_leaving_guard = std::unique_ptr<T, decltype([](T* obj) static { callback_t(obj); })>;
-#elif __cplusplus >= 20200
 template <typename T, auto callback_t>
 using scope_leaving_guard = std::unique_ptr<T, decltype([](T* obj) { callback_t(obj); })>;
-#else
-#warning "scope_leaving_guard not supported before C++20"
-#endif
 }
