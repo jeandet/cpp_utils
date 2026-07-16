@@ -21,9 +21,6 @@
 --                     Mail : alexis.jeandet@lpp.polytechnique.fr
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
-#include <hedley.h>
-#include "cpp_utils/config.h"
-#ifdef CPP_UTILS_CONCEPTS_SUPPORTED
 #include <concepts>
 #include <type_traits>
 #include <iterator>
@@ -72,7 +69,4 @@ template <class T>
 concept bounded_array = std::is_bounded_array_v<T>;
 
 } // namespace cpp_utils::types::concepts
-#else
-HEDLEY_WARNING("Concepts not supported before C++20")
-#endif
 

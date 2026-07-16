@@ -39,11 +39,11 @@ Dependencies are pulled via Meson subprojects/wraps (`subprojects/*.wrap`, vendo
 (v3, tests only). No network access is needed if the wrap cache is present.
 
 `include/cpp_utils/meson.build` generates `config.h` from `config.h.in` at configure time — it
-defines `CPP_UTILS_VERSION` and whether the compiler supports concepts
-(`CPP_UTILS_CONCEPTS_SUPPORTED`). `types/concepts.hpp` `#include`s `config.h` and only works
-post-configure — don't expect it to compile standalone outside the Meson build. Host endianness
-detection (`endianness.hpp`) no longer depends on `config.h` — it's computed directly from
-`std::endian::native` (`<bit>`, C++20).
+defines `CPP_UTILS_VERSION`. `types/concepts.hpp` no longer depends on `config.h`: concepts are
+mandatory core-language C++20 (not an optional/probed feature), and `cpp_std=c++20` is
+hard-pinned, so the old compile-check + `CPP_UTILS_CONCEPTS_SUPPORTED` gate was dead code and was
+removed. Host endianness detection (`endianness.hpp`) similarly no longer depends on `config.h`
+— it's computed directly from `std::endian::native` (`<bit>`, C++20).
 
 CI (`.github/workflows/CI.yml`) builds+tests on ubuntu/windows/macos-13/macos-14 via
 `meson setup && ninja && ninja test`. `.github/workflows/tests-with-coverage.yml` runs an

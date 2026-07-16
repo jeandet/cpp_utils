@@ -21,6 +21,7 @@
 --                     Mail : alexis.jeandet@lpp.polytechnique.fr
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
+#include <concepts>
 #include <type_traits>
 
 //TODO find a way to merge IS_TEMPLATE_T with IS_T
@@ -51,79 +52,67 @@
     static inline constexpr bool name##_v = name<T>::value;
 
 
-// https://stackoverflow.com/questions/28309164/checking-for-existence-of-an-overloaded-member-function
+// A struct wrapper (not a bare concept) is required so these traits stay usable as types
+// (e.g. std::conjunction<has_begin_method<T>, has_end_method<T>, ...> in containers/traits.hpp).
 #define HAS_METHOD(name, method, ...)                                                              \
     template <typename T, typename... Args>                                                        \
-    struct _##name                                                                                 \
-    {                                                                                              \
-        template <typename C,                                                                      \
-            typename = decltype(std::declval<C>().method(std::declval<Args>()...))>                \
-        static std::true_type test(int);                                                           \
-        template <typename C>                                                                      \
-        static std::false_type test(...);                                                          \
-                                                                                                   \
-    public:                                                                                        \
-        static constexpr bool value = decltype(test<T>(0))::value;                                 \
-    };                                                                                             \
+    concept _##name##_concept                                                                      \
+        = requires(T t) { t.method(std::declval<Args>()...); };                                    \
                                                                                                    \
     template <typename T>                                                                          \
-    struct name : std::integral_constant<bool, _##name<T, ##__VA_ARGS__>::value>                   \
+    struct name : std::bool_constant<_##name##_concept<T, ##__VA_ARGS__>>                          \
     {                                                                                              \
     };                                                                                             \
     template <typename T>                                                                          \
-    static inline constexpr bool name##_v = _##name<T, ##__VA_ARGS__>::value;
+    static inline constexpr bool name##_v = _##name##_concept<T, ##__VA_ARGS__>;
 
 
 #define HAS_MEMBER(member)                                                                         \
-    template <class T, class = void>                                                               \
-    struct has_##member##_member_object : std::false_type                                          \
-    {                                                                                              \
-    };                                                                                             \
+    template <class T>                                                                             \
+    concept _has_##member##_member_object_concept                                                  \
+        = requires(T t) { requires std::is_member_object_pointer_v<decltype(&T::member)>; };       \
                                                                                                    \
     template <class T>                                                                             \
-    struct has_##member##_member_object<T, decltype(std::declval<T>().member, void())>             \
-            : std::is_member_object_pointer<decltype(&T::member)>                                  \
+    struct has_##member##_member_object                                                            \
+        : std::bool_constant<_has_##member##_member_object_concept<T>>                             \
     {                                                                                              \
     };                                                                                             \
                                                                                                    \
     template <class T>                                                                             \
     static inline constexpr bool has_##member##_member_object_v                                    \
-        = has_##member##_member_object<T>::value;
+        = _has_##member##_member_object_concept<T>;
 
 
 #define HAS_TYPE(type)                                                                             \
-    template <typename T, typename = void>                                                         \
-    struct has_##type##_type : std::false_type                                                     \
-    {                                                                                              \
-    };                                                                                             \
+    template <typename T>                                                                          \
+    concept _has_##type##_type_concept = requires { typename T::type; };                           \
                                                                                                    \
     template <typename T>                                                                          \
-    struct has_##type##_type<T, decltype(std::declval<typename T::type>(), void())>                \
-            : std::true_type                                                                       \
+    struct has_##type##_type : std::bool_constant<_has_##type##_type_concept<T>>                   \
     {                                                                                              \
     };                                                                                             \
                                                                                                    \
     template <class T>                                                                             \
-    static inline constexpr bool has_##type##_type_v = has_##type##_type<T>::value;
+    static inline constexpr bool has_##type##_type_v = _has_##type##_type_concept<T>;
 
 namespace cpp_utils::types::detectors
 {
 
 
-template <typename T, typename = void>
-struct is_qt_tree_item : std::false_type
-{
+template <typename T>
+concept _is_qt_tree_item_concept = requires(T t) {
+    t.takeChildren();
+    t.parent();
+    t.addChild(nullptr);
 };
 
 template <typename T>
-struct is_qt_tree_item<T,
-    decltype(std::declval<T>().takeChildren(), std::declval<T>().parent(),
-        std::declval<T>().addChild(nullptr))> : std::true_type
+struct is_qt_tree_item : std::bool_constant<_is_qt_tree_item_concept<T>>
 {
 };
 
 template <class T>
-static inline constexpr bool is_qt_tree_item_v = is_qt_tree_item<T>::value;
+static inline constexpr bool is_qt_tree_item_v = _is_qt_tree_item_concept<T>;
 
 template <typename ref_type, typename... types>
 struct is_any_of : std::integral_constant<bool,(std::is_same_v<ref_type, types> || ...)>{};

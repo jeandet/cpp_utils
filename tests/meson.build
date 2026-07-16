@@ -1,4 +1,5 @@
 catch2_dep = dependency('catch2-with-main', version:'>3.0.0', required : true)
+cpp_compiler = meson.get_compiler('cpp')
 
 too_many_members_fragment = '''
 #include "reflexion/reflection.hpp"
