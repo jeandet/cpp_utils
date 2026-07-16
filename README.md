@@ -193,9 +193,14 @@ Useful `meson_options.txt` switches:
 - `-Dqt=true` — also build the Qt-dependent test variants (`*_qt.cpp`), linking Qt6
   Core/Widgets/Gui. Off by default.
 
-CI builds and tests on Linux, Windows, macOS (Intel & Apple Silicon) on every push/PR
-(`.github/workflows/CI.yml`); a separate workflow runs an additional Linux build with
-`-Db_coverage=true` and produces an lcov report (`.github/workflows/tests-with-coverage.yml`).
+CI (`.github/workflows/CI.yml`) runs on every push/PR/release:
+
+- default build+test matrix on Linux, Windows, macOS (Intel & Apple Silicon)
+- a Linux job with `-Dqt=true`, exercising the Qt-dependent test variants
+- a Linux ASan+UBSan job (`-Db_sanitize=address,undefined`)
+
+A separate workflow (`.github/workflows/tests-with-coverage.yml`) builds Linux with
+`-Db_coverage=true` and uploads an lcov report as a build artifact.
 
 Formatting follows `.clang-format` (WebKit-based, Allman braces, 4-space indent, 100-column
 limit).
