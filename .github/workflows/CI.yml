@@ -6,10 +6,14 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -26,10 +30,48 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Build wheels
+      - name: Build and test
         run: |
           python -m pip install --upgrade meson ninja
           meson setup build
           ninja -C build
           ninja -C build test
 
+  qt:
+    name: Build and test with Qt enabled
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Qt6
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt6-base-dev
+      - name: Build and test
+        run: |
+          python -m pip install --upgrade meson ninja
+          meson setup build -Dqt=true
+          ninja -C build
+          ninja -C build test
+
+  sanitizers:
+    name: ASan + UBSan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and test
+        run: |
+          python -m pip install --upgrade meson ninja
+          meson setup build -Db_sanitize=address,undefined
+          ninja -C build
+          ninja -C build test
