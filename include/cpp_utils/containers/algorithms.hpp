@@ -23,10 +23,10 @@
 ----------------------------------------------------------------------------*/
 
 #include "../containers/traits.hpp"
-#include "../cpp_utils.hpp"
 #include "../types/detectors.hpp"
 #include "../types/concepts.hpp"
 #include <algorithm>
+#include <functional>
 #include <numeric>
 #include <optional>
 #include <string>

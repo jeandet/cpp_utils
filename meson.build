@@ -41,7 +41,6 @@ headers = files(
         'include/cpp_utils/types/detectors.hpp',
         'include/cpp_utils/types/integers.hpp',
         'include/cpp_utils/types/pointers.hpp',
-        'include/cpp_utils/types/qt_types.hpp',
         'include/cpp_utils/types/strings.hpp'
     ]
 )

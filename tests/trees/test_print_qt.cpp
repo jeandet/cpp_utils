@@ -9,6 +9,7 @@
 #include <trees/algorithms.hpp>
 #include <vector>
 
+using namespace cpp_utils;
 using namespace cpp_utils::types::detectors;
 using namespace cpp_utils::trees;
 using namespace cpp_utils::types::pointers;

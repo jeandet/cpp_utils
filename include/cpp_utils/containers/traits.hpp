@@ -22,7 +22,6 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 
-#include "../cpp_utils.hpp"
 #include "../types/detectors.hpp"
 
 #include <algorithm>
