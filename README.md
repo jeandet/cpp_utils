@@ -3,21 +3,20 @@
 [![GH Actions](https://github.com/jeandet/cpp_utils/actions/workflows/CI.yml/badge.svg)](https://github.com/jeandet/cpp_utils/actions/workflows/CI.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A header-only C++20 utility library providing low-level building blocks shared across
-[Alexis Jeandet](https://github.com/jeandet)'s space-physics tooling (the Speasy / SciQLop /
-CDFpp family): compile-time reflection over aggregates, binary serialization, endianness-aware
-decoding, and a handful of container, string, and tree helpers.
+A header-only C++20 utility library — this is where [Alexis Jeandet](https://github.com/jeandet)
+keeps the general-purpose C++ building blocks reused across his own projects: compile-time
+reflection over aggregates, binary serialization, endianness-aware decoding, and a handful of
+container, string, and tree helpers. Not tied to any particular file format or domain.
 
 Almost all logic lives in `include/cpp_utils/` — there is no `.cpp` source beyond the test suite.
 
-## Why
+## Why the serde module works this way
 
-Formats like CDF and other binary telemetry/record formats are made of plain structs with a
-handful of recurring quirks: fixed-size arrays, variable-length arrays sized by another field,
-padding, big-endian wire order, unused/reserved fields, fixed-point scaled values. `cpp_utils`
-lets you describe those structs as ordinary C++ aggregates and get (de)serialization for free,
-without writing per-field boilerplate or codegen — a compile-time reflection layer walks the
-struct's fields for you.
+Binary record formats are often just plain structs with a handful of recurring quirks: fixed-size
+arrays, variable-length arrays sized by another field, padding, big-endian wire order,
+unused/reserved fields, fixed-point scaled values. `cpp_utils` lets you describe those structs as
+ordinary C++ aggregates and get (de)serialization for free, without writing per-field boilerplate
+or codegen — a compile-time reflection layer walks the struct's fields for you.
 
 ## Features
 
@@ -58,11 +57,26 @@ present.
 
 ## Using it in your project
 
-`cpp_utils` is header-only and meant to be consumed as a Meson subproject:
+The simplest way to consume `cpp_utils` is as a Meson wrap. Add
+`subprojects/cpp_utils.wrap`:
+
+```ini
+[wrap-git]
+url = https://github.com/jeandet/cpp_utils
+revision = main
+depth = 1
+
+[provide]
+cpp_utils = cpp_utils_dep
+```
+
+then depend on it like any other Meson dependency, falling back to the wrap when it isn't
+installed on the system:
 
 ```meson
-cpp_utils_proj = subproject('cpp_utils')
-cpp_utils_dep = cpp_utils_proj.get_variable('cpp_utils_dep')
+cpp_utils_dep = dependency('cpp_utils',
+    fallback : ['cpp_utils', 'cpp_utils_dep'],
+    default_options : ['with_tests=false'])
 
 executable('my_app', 'main.cpp', dependencies : [cpp_utils_dep])
 ```
