@@ -34,6 +34,7 @@ headers = files(
         'include/cpp_utils/serde/special_fields.hpp',
         'include/cpp_utils/serde/serde.hpp',
         'include/cpp_utils/strings/algorithms.hpp',
+        'include/cpp_utils/strings/traits.hpp',
         'include/cpp_utils/trees/algorithms.hpp',
         'include/cpp_utils/trees/node.hpp',
         'include/cpp_utils/trees/traits.hpp',

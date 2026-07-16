@@ -137,6 +137,11 @@ tests = [
         'sources': ['serde/test_runtime_size.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
+    {
+        'name':'TestScaledField',
+        'sources': ['serde/test_scaled_field.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
 ]
 
 foreach unit_test : tests

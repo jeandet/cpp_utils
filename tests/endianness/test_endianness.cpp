@@ -4,6 +4,7 @@
 #include <catch2/matchers/catch_matchers_templated.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 #include "endianness/endianness.hpp"
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -30,6 +31,33 @@ TEST_CASE("Endianness vector", "[decode]")
     REQUIRE_THAT(output, Catch::Matchers::Equals<uint8_t>({4,3,2,1,8,7,6,5,12,11,10,9,16,15,14,13}));
     decode_v<target_endianness>(input.data(),std::size(input),reinterpret_cast<uint64_t*>(output.data()));
     REQUIRE_THAT(output, Catch::Matchers::Equals<uint8_t>({8,7,6,5,4,3,2,1,16,15,14,13,12,11,10,9}));
+}
+
+TEST_CASE("Runtime-dispatched decode matches the compile-time decode for both byte orders", "[decode]")
+{
+    using namespace cpp_utils::endianness;
+    REQUIRE(decode<little_endian_t, uint32_t>("\1\2\3\4")
+        == decode<uint32_t>(Endianness::little, "\1\2\3\4"));
+    REQUIRE(decode<big_endian_t, uint32_t>("\1\2\3\4")
+        == decode<uint32_t>(Endianness::big, "\1\2\3\4"));
+}
+
+TEST_CASE("Runtime-dispatched encode matches the compile-time encode for both byte orders", "[encode]")
+{
+    using namespace cpp_utils::endianness;
+    char runtime_little[4];
+    char compiletime_little[4];
+    encode<uint32_t>(Endianness::little, 0x01020304, runtime_little);
+    encode<little_endian_t>(0x01020304u, compiletime_little);
+    REQUIRE(std::equal(std::begin(runtime_little), std::end(runtime_little),
+        std::begin(compiletime_little)));
+
+    char runtime_big[4];
+    char compiletime_big[4];
+    encode<uint32_t>(Endianness::big, 0x01020304, runtime_big);
+    encode<big_endian_t>(0x01020304u, compiletime_big);
+    REQUIRE(std::equal(
+        std::begin(runtime_big), std::end(runtime_big), std::begin(compiletime_big)));
 }
 
 TEST_CASE("Endianness vector at a misaligned buffer offset", "[decode]")

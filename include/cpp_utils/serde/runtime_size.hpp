@@ -91,6 +91,13 @@ constexpr inline std::size_t field_runtime_size(
 }
 
 constexpr inline std::size_t field_runtime_size(
+    const auto&, const auto&, const scaled_field auto& field)
+{
+    using field_t = std::decay_t<decltype(field)>;
+    return field_t::wire_size;
+}
+
+constexpr inline std::size_t field_runtime_size(
     const auto& parent, const auto& context, const unused_field auto& field)
 {
     using value_type = typename std::decay_t<decltype(field)>::value_type;

@@ -223,6 +223,17 @@ constexpr inline std::size_t load_field(const auto&, auto& parsing_context, std:
 }
 
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
+    std::size_t offset, const auto& context, scaled_field auto& field)
+{
+    (void)context;
+    using field_t = std::decay_t<decltype(field)>;
+    typename field_t::wire_type raw {};
+    const auto next_offset = load_value(parsing_context, offset, raw, parent_composite);
+    field.value = static_cast<typename field_t::value_type>(raw) * field_t::scale;
+    return next_offset;
+}
+
+constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
     std::size_t offset, const auto& context, unused_field auto& field)
 {
     using field_t = std::decay_t<decltype(field)>;

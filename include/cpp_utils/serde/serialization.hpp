@@ -30,6 +30,7 @@
 #include "context.hpp"
 #include "special_fields.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstring>
 
@@ -155,6 +156,16 @@ constexpr inline std::size_t save_field(const auto&, byte_sink auto& sink, std::
     if (copy_len < field_t::max_len)
         std::memset(out + copy_len, 0, field_t::max_len - copy_len);
     return offset + field_t::max_len;
+}
+
+constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+    std::size_t offset, const auto& context, const scaled_field auto& field)
+{
+    using field_t = std::decay_t<decltype(field)>;
+    using wire_t = typename field_t::wire_type;
+    const auto raw = static_cast<wire_t>(
+        std::llround(static_cast<double>(field.value) / static_cast<double>(field_t::scale)));
+    return save_field(parent_composite, sink, offset, context, raw);
 }
 
 constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,

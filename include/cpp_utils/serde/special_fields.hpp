@@ -26,6 +26,7 @@
 #pragma once
 #include "../endianness/endianness.hpp"
 #include "../reflexion/reflection.hpp"
+#include <cstdint>
 #include <limits>
 #include <string>
 #include <vector>
@@ -185,6 +186,24 @@ private:
 
 template <typename T>
 concept unused_field = std::is_same_v<T, unused<typename T::value_type>>;
+
+template <typename wire_t, typename real_t, std::intmax_t Num, std::intmax_t Den = 1>
+struct scaled
+{
+    using do_not_split = reflexion::do_not_split_t;
+    using wire_type = wire_t;
+    using value_type = real_t;
+    static constexpr std::size_t wire_size = sizeof(wire_t);
+    static constexpr std::intmax_t num = Num;
+    static constexpr std::intmax_t den = Den;
+    static constexpr real_t scale = static_cast<real_t>(Num) / static_cast<real_t>(Den);
+
+    real_t value {};
+};
+
+template <typename T>
+concept scaled_field
+    = std::is_same_v<T, scaled<typename T::wire_type, typename T::value_type, T::num, T::den>>;
 
 template <typename composite_t>
 consteval auto _endianness()

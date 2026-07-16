@@ -227,6 +227,16 @@ inline void decode_v(const auto* data, std::size_t size, value_t* output)
         reinterpret_cast<const _value_t*>(data), count, reinterpret_cast<_value_t*>(output));
 }
 
+// Endianness::unknown defaults to little-endian, matching serde's own default for composites
+// that don't opt into big_endian_t.
+template <typename T, typename U>
+[[nodiscard]] HEDLEY_NON_NULL(2) T decode(Endianness src_endianness, const U* input)
+{
+    if (src_endianness == Endianness::big)
+        return decode<big_endian_t, T>(input);
+    return decode<little_endian_t, T>(input);
+}
+
 template <typename dst_endianess_t, typename T>
 HEDLEY_NON_NULL(2)
 inline void encode(T value, char* output)
@@ -243,6 +253,16 @@ inline void encode(T value, char* output)
     {
         *output = static_cast<char>(value);
     }
+}
+
+template <typename T>
+HEDLEY_NON_NULL(3)
+inline void encode(Endianness dst_endianness, T value, char* output)
+{
+    if (dst_endianness == Endianness::big)
+        encode<big_endian_t>(value, output);
+    else
+        encode<little_endian_t>(value, output);
 }
 
 template <typename dst_endianess_t, typename value_t>

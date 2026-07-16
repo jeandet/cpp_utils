@@ -35,6 +35,14 @@ namespace cpp_utils::trees
 
 namespace details
 {
+    template <typename T, typename visitor_t>
+    void _for_each(T&& node, visitor_t& visitor)
+    {
+        visitor(node);
+        for (std::size_t i = 0; i < children_count(node); i++)
+            _for_each(child(node, i), visitor);
+    }
+
     template <typename T, typename U>
     void _print_tree(T&& tree, int indent_increment, int indent_lvl, U& ostream)
     {
@@ -56,6 +64,13 @@ namespace details
     }
 }
 
+
+template <typename T, typename visitor_t>
+void for_each(T&& tree, visitor_t&& visitor)
+{
+    using namespace cpp_utils::types::pointers;
+    details::_for_each(to_value_ref(tree), visitor);
+}
 
 template <typename T, typename U = decltype(std::cout), int indent_increment = 3>
 void print_tree(T&& tree, U& ostream = std::cout)

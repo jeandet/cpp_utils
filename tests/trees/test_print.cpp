@@ -49,3 +49,12 @@ TEST_CASE("Print tree", "[trees]")
     print_tree(make_test_tree(), ss);
     REQUIRE(expected == ss.str());
 }
+
+TEST_CASE("Depth-first traversal visits every node exactly once, root first", "[trees]")
+{
+    std::vector<std::string> visited;
+    for_each(make_test_tree(), [&visited](auto& node) { visited.push_back(name(node)); });
+    REQUIRE(visited
+        == std::vector<std::string> { "root", "node 0", "node 0", "node 1", "node 1", "node 0",
+            "node 1", "node 2", "node 0", "node 1" });
+}

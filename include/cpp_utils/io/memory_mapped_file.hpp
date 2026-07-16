@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <cstring>
 #include <filesystem>
+#include <span>
 #include <string>
 #include <type_traits>
 #if __has_include(<sys/mman.h>)
@@ -143,6 +144,12 @@ struct memory_mapped_file
 
     auto size() const { return this->f_size; }
     auto data() const { return view(0); }
+
+    template <typename T = std::byte>
+    std::span<const T> as_span() const
+    {
+        return { reinterpret_cast<const T*>(mapped_file), f_size / sizeof(T) };
+    }
 
     bool is_valid() const
     {

@@ -28,6 +28,9 @@
 namespace cpp_utils::strings
 {
 
+using cpp_utils::containers::split;
+using cpp_utils::containers::join;
+
 // https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
 static inline std::string& ltrim(std::string& s)
 {
