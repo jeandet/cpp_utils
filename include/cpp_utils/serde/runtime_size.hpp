@@ -46,10 +46,19 @@ constexpr inline std::size_t field_runtime_size(
 }
 
 constexpr inline std::size_t field_runtime_size(
-    const auto&, const auto&, const dynamic_array_field auto& array_field)
+    const auto&, const auto& context, const dynamic_array_field auto& array_field)
 {
     using field_t = typename std::decay_t<decltype(array_field)>::value_type;
-    return array_field.size() * reflexion::field_size<field_t>();
+    const auto count = array_field.size();
+    if constexpr (std::is_compound_v<field_t>)
+    {
+        std::size_t total = 0;
+        for (std::size_t i = 0; i < count; ++i)
+            total += runtime_size_fields(array_field[i], context);
+        return total;
+    }
+    else
+        return count * reflexion::field_size<field_t>();
 }
 
 constexpr inline std::size_t field_runtime_size(
@@ -90,6 +99,12 @@ constexpr inline std::size_t field_runtime_size(
         "yet supported by runtime_size (save_field does not support it either)");
     value_type zero {};
     return field_runtime_size(parent, context, zero);
+}
+
+template <typename composite_t, typename context_t>
+constexpr inline std::size_t fields_runtime_size(const composite_t&, const context_t&)
+{
+    return 0;
 }
 
 template <typename composite_t, typename context_t, typename T>

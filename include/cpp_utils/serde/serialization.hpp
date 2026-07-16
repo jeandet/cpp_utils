@@ -169,6 +169,13 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
     return save_field(parent_composite, sink, offset, context, zero);
 }
 
+template <typename composite_t, typename sink_t, typename context_t>
+constexpr inline std::size_t save_fields(
+    const composite_t&, sink_t&, std::size_t offset, const context_t&)
+{
+    return offset;
+}
+
 template <typename composite_t, typename sink_t, typename context_t, typename T>
 constexpr inline std::size_t save_fields(const composite_t& r, sink_t& sink,
     [[maybe_unused]] std::size_t offset, const context_t& context, T&& field)

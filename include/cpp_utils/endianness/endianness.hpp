@@ -103,14 +103,30 @@ namespace details
     T byte_swap(T value)
     {
         using int_repr_t = uint_t<s>;
-        int_repr_t result = bswap(*reinterpret_cast<int_repr_t*>(&value));
-        return *reinterpret_cast<T*>(&result);
+        return std::bit_cast<T>(bswap(std::bit_cast<int_repr_t>(value)));
     }
 
     template <typename T, std::size_t s = sizeof(T)>
     void byte_swap(T* values, std::size_t count)
     {
         std::transform(values, values + count, values, [](const auto& v) { return byte_swap(v); });
+    }
+
+    // Reads/writes through memcpy rather than a typed pointer: `data`/`output` may point at an
+    // arbitrary byte offset inside a larger buffer (e.g. a struct field mid-way through a wire
+    // record) with no alignment guarantee for value_t.
+    template <typename value_t>
+    inline value_t unaligned_load(const void* data)
+    {
+        value_t result;
+        std::memcpy(&result, data, sizeof(value_t));
+        return result;
+    }
+
+    template <typename value_t>
+    inline void unaligned_store(void* output, const value_t& value)
+    {
+        std::memcpy(output, &value, sizeof(value_t));
     }
 }
 
@@ -172,12 +188,11 @@ inline void _impl_decode_v(const value_t* data, std::size_t size, value_t* outpu
 {
     if constexpr (sizeof(value_t) > 1 and not std::is_same_v<host_endianness_t, src_endianess_t>)
     {
-        if (size > 0)
+        for (auto i = 0UL; i < size; i++)
         {
-            for (auto i = 0UL; i < size; i++)
-            {
-                output[i] = details::byte_swap(data[i]);
-            }
+            const auto swapped
+                = details::byte_swap(details::unaligned_load<value_t>(data + i));
+            details::unaligned_store(output + i, swapped);
         }
     }
     else

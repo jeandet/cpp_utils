@@ -90,6 +90,11 @@ consteval std::size_t MemberCounter()
         constexpr std::size_t count = cpp_utils::reflexion::count_members<T>;                      \
         static_assert(count <= 31);                                                                \
                                                                                                    \
+        if constexpr (count == 0)                                                                  \
+        {                                                                                          \
+            return function(structure, args...);                                                   \
+        }                                                                                          \
+                                                                                                   \
         if constexpr (count == 1)                                                                  \
         {                                                                                          \
             auto& [_0] = structure;                                                                \
@@ -389,6 +394,11 @@ template <typename field_t>
     return true;
 }
 
+[[nodiscard]] constexpr inline bool fields_have_const_size(const auto&)
+{
+    return true;
+}
+
 [[nodiscard]] constexpr inline bool fields_have_const_size(const auto&, auto& field)
 {
     using Field_t = std::decay_t<decltype(field)>;
@@ -438,6 +448,11 @@ template <typename field_t>
     if constexpr (can_split_v<Field_t>)
         return composite_size<Field_t>();
     return sizeof(Field_t);
+}
+
+[[nodiscard]] constexpr inline std::size_t fields_size(const auto&)
+{
+    return 0;
 }
 
 [[nodiscard]] constexpr inline std::size_t fields_size(const auto&, auto& field)

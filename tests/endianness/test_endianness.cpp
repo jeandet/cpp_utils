@@ -31,3 +31,18 @@ TEST_CASE("Endianness vector", "[decode]")
     decode_v<target_endianness>(input.data(),std::size(input),reinterpret_cast<uint64_t*>(output.data()));
     REQUIRE_THAT(output, Catch::Matchers::Equals<uint8_t>({8,7,6,5,4,3,2,1,16,15,14,13,12,11,10,9}));
 }
+
+TEST_CASE("Endianness vector at a misaligned buffer offset", "[decode]")
+{
+    // Regression test for a strict-aliasing/unaligned-access bug: decode_v used to
+    // reinterpret_cast the source pointer straight to a wider type and dereference it, which is
+    // undefined behavior when that pointer isn't naturally aligned for the target type (as here,
+    // starting one byte into the buffer). Confirmed via -fsanitize=alignment before the fix.
+    using namespace cpp_utils::endianness;
+    using target_endianness = std::conditional_t<host_is_big_endian, little_endian_t, big_endian_t>;
+    std::vector<uint8_t> input { 0, 1, 2, 3, 4, 5, 6, 7, 8 };
+    uint32_t output[2];
+    decode_v<target_endianness>(input.data() + 1, std::size_t { 8 }, output);
+    REQUIRE(output[0] == 0x01020304);
+    REQUIRE(output[1] == 0x05060708);
+}

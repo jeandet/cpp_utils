@@ -230,6 +230,13 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
     return load_field(parent_composite, parsing_context, offset, context, discarded);
 }
 
+template <typename composite_t, typename parsing_context_t, typename context_t>
+constexpr inline std::size_t load_fields(
+    const composite_t&, parsing_context_t&, std::size_t offset, const context_t&)
+{
+    return offset;
+}
+
 template <typename composite_t, typename parsing_context_t, typename context_t, typename T>
 constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t& parsing_context,
     [[maybe_unused]] std::size_t offset, const context_t& context, T&& field)
