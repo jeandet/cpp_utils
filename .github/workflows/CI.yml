@@ -19,8 +19,7 @@ jobs:
         include:
           - os: ubuntu-latest
           - os: windows-latest
-          - os: macos-13  # Intel
-          - os: macos-14 # Apple Silicon
+          - os: macos-latest # Apple Silicon only — GH no longer offers a rolling Intel macOS label
     steps:
       - uses: ilammy/msvc-dev-cmd@v1
         if: runner.os == 'Windows'
@@ -73,5 +72,24 @@ jobs:
         run: |
           python -m pip install --upgrade meson ninja
           meson setup build -Db_sanitize=address,undefined
+          ninja -C build
+          ninja -C build test
+
+  cpp23:
+    # The project itself still targets C++20 (cibuildwheel's Windows toolchain has no stable
+    # non-preview /std:c++23 yet); this job only exercises the __cpp_lib_byteswap-guarded
+    # opt-in path so it doesn't silently bit-rot.
+    name: Build and test with -Dcpp_std=c++23 (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and test
+        run: |
+          python -m pip install --upgrade meson ninja
+          meson setup build -Dcpp_std=c++23
           ninja -C build
           ninja -C build test

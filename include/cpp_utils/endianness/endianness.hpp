@@ -86,6 +86,24 @@ namespace details
     {
         return v;
     }
+#if defined(__cpp_lib_byteswap)
+    // Opt-in: only defined when compiled as C++23 (or later) with a standard library that
+    // implements P1272. The project itself still hard-pins cpp_std=c++20 (see CI's cpp23 job
+    // and CLAUDE.md), so this branch is dead code there and the builtins below remain the
+    // default path.
+    inline uint16_t bswap(uint16_t v)
+    {
+        return std::byteswap(v);
+    }
+    inline uint32_t bswap(uint32_t v)
+    {
+        return std::byteswap(v);
+    }
+    inline uint64_t bswap(uint64_t v)
+    {
+        return std::byteswap(v);
+    }
+#else
     inline uint16_t bswap(uint16_t v)
     {
         return bswap16(v);
@@ -98,6 +116,7 @@ namespace details
     {
         return bswap64(v);
     }
+#endif
 
 #undef bswap16
 #undef bswap32

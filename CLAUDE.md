@@ -167,10 +167,14 @@ Host endianness (`host_is_big_endian`/`host_is_little_endian`) is computed via
 `decode<src_endianness_t, T>(ptr)` byte-swaps only when `src_endianness_t` differs from
 `host_endianness_t`, and is a no-op for single-byte types; `encode<dst_endianness_t, T>(value,
 output)` is the write-side counterpart used by `serde::serialize`. `decode_v`/`encode_v` are the
-bulk/array variants used by `serde` for array fields. Byte-swapping itself is still done via
-`__builtin_bswap*`/`_byteswap_*` — deliberately not `std::byteswap` (C++23), since this project
-targets C++20 only (the codebase must build across a wide toolchain matrix, including
-`cibuildwheel`-driven wheel builds for downstream consumers).
+bulk/array variants used by `serde` for array fields. Byte-swapping itself defaults to
+`__builtin_bswap*`/`_byteswap_*`, since this project hard-pins `cpp_std=c++20` (the codebase
+must build across a wide toolchain matrix, including `cibuildwheel`-driven wheel builds for
+downstream consumers — MSVC has no stable non-preview `/std:c++23` yet, and Meson itself doesn't
+map `cpp_std=c++23` to an MSVC flag as of mesonbuild/meson#15981). `details::bswap` opportunistically
+switches to `std::byteswap` when `__cpp_lib_byteswap` is defined (i.e. when a consumer builds this
+header under `-std=c++23`+ with a standard library that implements it) — dead code under the
+project's own C++20 build, exercised by CI's `cpp23` job so it doesn't bit-rot.
 
 ### Tests
 

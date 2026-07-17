@@ -209,9 +209,11 @@ Useful `meson_options.txt` switches:
 
 CI (`.github/workflows/CI.yml`) runs on every push/PR/release:
 
-- default build+test matrix on Linux, Windows, macOS (Intel & Apple Silicon)
+- default build+test matrix on the latest Linux, Windows, and macOS (Apple Silicon) runners
 - a Linux job with `-Dqt=true`, exercising the Qt-dependent test variants
 - a Linux ASan+UBSan job (`-Db_sanitize=address,undefined`)
+- a Linux job with `-Dcpp_std=c++23`, exercising the opt-in `std::byteswap` path in
+  `endianness.hpp` (see below) — the project itself still targets C++20
 
 A separate workflow (`.github/workflows/tests-with-coverage.yml`) builds Linux with
 `-Db_coverage=true` and uploads an lcov report as a build artifact.
