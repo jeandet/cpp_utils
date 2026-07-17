@@ -141,4 +141,8 @@ TEST_CASE("Containers algorithms", "[Containers]")
     int value = 0;
     broadcast(c, &TestBroadcast::increment, value);
     REQUIRE(value == 10);
+
+    REQUIRE(flat_size(std::vector<std::size_t> { 2, 3, 4 }) == 24);
+    REQUIRE(flat_size(std::vector<std::size_t> {}) == 0);
+    REQUIRE(flat_size(std::array<std::size_t, 1> { 5 }) == 5);
 }

@@ -145,4 +145,15 @@ auto broadcast(T& collection, U fptr, V&&... parameters)
     }
 }
 
+// Product of a shape/extents container's values (e.g. the element count of an
+// N-D array given its per-dimension sizes). Empty input yields 0.
+template <typename T>
+auto flat_size(const T& shape) -> decltype(std::cbegin(shape), std::cend(shape), std::size_t {})
+{
+    if (std::size(shape) == 0)
+        return 0UL;
+    return std::accumulate(
+        std::cbegin(shape), std::cend(shape), std::size_t { 1 }, std::multiplies<std::size_t> {});
+}
+
 } //

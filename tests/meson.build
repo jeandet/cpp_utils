@@ -148,6 +148,16 @@ tests = [
         'sources': ['serde/test_scaled_field.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
+    {
+        'name':'TestVisitor',
+        'sources': ['types/test_visitor.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
+        'name':'TestDtypeDispatch',
+        'sources': ['types/test_dtype_dispatch.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
 ]
 
 foreach unit_test : tests

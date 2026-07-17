@@ -41,9 +41,11 @@ headers = files(
         'include/cpp_utils/trees/traits.hpp',
         'include/cpp_utils/types/concepts.hpp',
         'include/cpp_utils/types/detectors.hpp',
+        'include/cpp_utils/types/dtype_dispatch.hpp',
         'include/cpp_utils/types/integers.hpp',
         'include/cpp_utils/types/pointers.hpp',
-        'include/cpp_utils/types/strings.hpp'
+        'include/cpp_utils/types/strings.hpp',
+        'include/cpp_utils/types/visitor.hpp'
     ]
 )
 
