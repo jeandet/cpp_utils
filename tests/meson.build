@@ -22,6 +22,8 @@ else
   qt5_dep = disabler()
 endif
 
+bshoshany_thread_pool_dep = dependency('bshoshany-thread-pool')
+
 tests = [
     {
         'name':'TreePrint',
@@ -156,6 +158,21 @@ tests = [
     {
         'name':'TestDtypeDispatch',
         'sources': ['types/test_dtype_dispatch.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
+        'name':'TestParallelFor',
+        'sources': ['threading/test_parallel_for.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep, bshoshany_thread_pool_dep]
+    },
+    {
+        'name':'TestFuzzyMatch',
+        'sources': ['strings/test_fuzzy_match.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
+        'name':'TestNdShape',
+        'sources': ['containers/test_nd_shape.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
     },
 ]

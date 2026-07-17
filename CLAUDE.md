@@ -36,7 +36,10 @@ Useful options (`meson_options.txt`):
 
 Dependencies are pulled via Meson subprojects/wraps (`subprojects/*.wrap`, vendored in
 `subprojects/packagecache`): `hedley` (portability macros, always required) and `catch2-with-main`
-(v3, tests only). No network access is needed if the wrap cache is present.
+(v3, tests only). No network access is needed if the wrap cache is present. `bshoshany-thread-pool`
+is a third wrap, but — like Qt — it is deliberately NOT part of `cpp_utils_dep`: only
+`threading/parallel_for.hpp` and its test need it, wired directly into that test's `deps` in
+`tests/meson.build`, so plain consumers of `cpp_utils_dep` never pull it in.
 
 `include/cpp_utils/meson.build` generates `config.h` from `config.h.in` at configure time — it
 defines `CPP_UTILS_VERSION`. `types/concepts.hpp` no longer depends on `config.h`: concepts are
@@ -62,13 +65,22 @@ to the `headers` list in the root `meson.build` (new public headers must be adde
 - `serde/` — binary (de)serialization built on top of `reflexion` + `endianness`.
 - `endianness/` — compile-time-aware byte-swapping and little/big-endian decode helpers.
 - `types/` — concepts (`concepts.hpp`), member/method/type detection idioms
-  (`detectors.hpp`), smart pointer helpers, Qt<->native type traits (`qt_types.hpp`), integer
-  helpers.
+  (`detectors.hpp`), smart pointer helpers, integer helpers, `Visitor<Ts...>` (`visitor.hpp`,
+  the variant-overload CTAD idiom), `dispatch_dtype` (`dtype_dispatch.hpp`, runtime
+  format-char → compile-time-type dispatch, e.g. for numpy/buffer-protocol interop).
 - `containers/` — `no_init_vector` (vector without value-initialization for perf-sensitive
-  buffers), `nomap` (vector-backed associative container), container algorithms/traits.
+  buffers), `nomap` (vector-backed associative container), container algorithms/traits
+  (`algorithms.hpp` also has `flat_size` — shape-product/element-count helper), `nd_shape.hpp`
+  (`flat_index`/`permute_axes` — arbitrary-dimension-count N-D flat indexing and axis
+  permutation, row-major or column-major).
 - `trees/` — a generic tree `node<T>` plus traversal algorithms and trait detection so trees can
   be templated over user-supplied node-like types.
-- `strings/` — small string algorithms.
+- `strings/` — small string algorithms, plus `fuzzy_match.hpp` (character/container-generic
+  subsequence fuzzy-match scoring with word-boundary/camelCase bonuses — templated on `CharT`,
+  ASCII-range case-folding only, not a full Unicode case-fold).
+- `threading/` — `parallel_for`/`parallel_for_each` over a lazily-initialized, hardware-
+  concurrency-sized `BS::light_thread_pool` singleton. Needs the `bshoshany-thread-pool`
+  dependency explicitly (see Build & test above) — not part of `cpp_utils_dep`.
 - `lifetime/` — RAII scope-leaving guards (run code on scope exit).
 - `io/` — `memory_mapped_file` (file-backed) and `buffer_view` (non-owning view over an
   in-memory buffer). Both satisfy `types::concepts::random_access_buffer`
@@ -76,7 +88,8 @@ to the `headers` list in the root `meson.build` (new public headers must be adde
   passed directly to `serde::deserialize` or used interchangeably wherever a byte buffer is
   expected.
 - `cpp_utils_qt/` — Qt-specific specializations (pointer types, tree traits, converters). Kept
-  separate from the core headers so consumers who don't use Qt never pull in Qt headers.
+  separate from the core headers so consumers who don't use Qt never pull in Qt headers. Same
+  reasoning as `threading/`'s dependency isolation above.
 
 ### Reflection (`reflexion/reflection.hpp`)
 

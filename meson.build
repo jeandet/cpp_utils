@@ -15,6 +15,7 @@ subdir('include/cpp_utils')
 headers = files(
     [
         'include/cpp_utils/containers/algorithms.hpp',
+        'include/cpp_utils/containers/nd_shape.hpp',
         'include/cpp_utils/containers/traits.hpp',
         'include/cpp_utils/containers/no_init_vector.hpp',
         'include/cpp_utils/containers/nomap.hpp',
@@ -35,7 +36,9 @@ headers = files(
         'include/cpp_utils/serde/special_fields.hpp',
         'include/cpp_utils/serde/serde.hpp',
         'include/cpp_utils/strings/algorithms.hpp',
+        'include/cpp_utils/strings/fuzzy_match.hpp',
         'include/cpp_utils/strings/traits.hpp',
+        'include/cpp_utils/threading/parallel_for.hpp',
         'include/cpp_utils/trees/algorithms.hpp',
         'include/cpp_utils/trees/node.hpp',
         'include/cpp_utils/trees/traits.hpp',
