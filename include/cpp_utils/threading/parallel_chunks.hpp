@@ -118,4 +118,37 @@ void parallel_chunks_transform(const Input& input, Output output, std::size_t mi
     pool().wait();
 }
 
+// Per-chunk f reduces a chunk to one T; combine folds the per-chunk partials together,
+// starting from init. Below-threshold input skips the pool entirely:
+// combine(init, f(whole input)). Empty input returns init untouched — f/combine are never
+// called.
+template <typename Input, typename T, typename F, typename BinaryOp>
+    requires types::concepts::chunk_reduce_callback<F, Input, T>
+          && types::concepts::foldable_binary_op<BinaryOp, T>
+T parallel_chunks_reduce(const Input& input, T init, std::size_t min_chunk_size, F&& f,
+    BinaryOp&& combine, std::size_t chunk_count = 0)
+{
+    const std::size_t count = std::ranges::size(input);
+    if (count == 0)
+        return init;
+
+    const auto [parallelize, effective_chunks]
+        = details::chunk_dispatch_plan(count, min_chunk_size, chunk_count);
+    if (!parallelize)
+        return combine(init, f(details::make_span(input, 0, count)));
+
+    auto partials = pool()
+                        .submit_blocks(
+                            std::size_t { 0 }, count,
+                            [&](std::size_t start, std::size_t end)
+                            { return f(details::make_span(input, start, end - start)); },
+                            effective_chunks)
+                        .get();
+
+    T acc = init;
+    for (auto& partial : partials)
+        acc = combine(acc, partial);
+    return acc;
+}
+
 }

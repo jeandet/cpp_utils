@@ -102,5 +102,18 @@ template <class F, class Input, class Output>
 concept chunk_transform_callback = contiguous_sized_range<Input> &&
     std::invocable<F, std::span<const std::ranges::range_value_t<Input>>, Output>;
 
+/** chunk_reduce_callback: F reduces a read-only input chunk down to a single value
+ * convertible to T — the per-chunk callback shape used by threading::parallel_chunks_reduce. */
+template <class F, class Input, class T>
+concept chunk_reduce_callback = contiguous_sized_range<Input> &&
+    std::regular_invocable<F, std::span<const std::ranges::range_value_t<Input>>> &&
+    std::convertible_to<std::invoke_result_t<F, std::span<const std::ranges::range_value_t<Input>>>, T>;
+
+/** foldable_binary_op: BinaryOp(T, T) -> convertible-to-T, e.g. std::plus<>{} — the combine
+ * step used by threading::parallel_chunks_reduce to fold per-chunk partial results. */
+template <class BinaryOp, class T>
+concept foldable_binary_op = std::regular_invocable<BinaryOp, T, T> &&
+    std::convertible_to<std::invoke_result_t<BinaryOp, T, T>, T>;
+
 } // namespace cpp_utils::types::concepts
 

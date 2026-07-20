@@ -120,3 +120,59 @@ TEST_CASE("parallel_chunks_transform runs one serial call when below threshold",
     REQUIRE(calls == 1);
     REQUIRE(output == input);
 }
+
+TEST_CASE("parallel_chunks_reduce matches a serial accumulate above threshold", "[threading]")
+{
+    constexpr std::size_t count = 1000;
+    std::vector<int> input(count);
+    std::iota(input.begin(), input.end(), 1);
+
+    auto result = parallel_chunks_reduce(
+        input, 0, std::size_t { 1 },
+        [](std::span<const int> chunk) { return std::accumulate(chunk.begin(), chunk.end(), 0); },
+        [](int a, int b) { return a + b; });
+
+    REQUIRE(result == std::accumulate(input.begin(), input.end(), 0));
+}
+
+TEST_CASE("parallel_chunks_reduce runs one serial call when below threshold", "[threading]")
+{
+    std::vector<int> input { 1, 2, 3, 4 };
+    std::atomic<int> calls { 0 };
+
+    auto result = parallel_chunks_reduce(
+        input, 10, std::size_t { 1'000'000 },
+        [&](std::span<const int> chunk)
+        {
+            calls++;
+            return std::accumulate(chunk.begin(), chunk.end(), 0);
+        },
+        [](int a, int b) { return a + b; });
+
+    REQUIRE(calls == 1);
+    REQUIRE(result == 20);
+}
+
+TEST_CASE("parallel_chunks_reduce returns init unchanged for empty input", "[threading]")
+{
+    std::vector<int> input;
+    int f_calls = 0;
+    int combine_calls = 0;
+
+    auto result = parallel_chunks_reduce(
+        input, 42, std::size_t { 1 },
+        [&](std::span<const int>)
+        {
+            f_calls++;
+            return 0;
+        },
+        [&](int a, int b)
+        {
+            combine_calls++;
+            return a + b;
+        });
+
+    REQUIRE(result == 42);
+    REQUIRE(f_calls == 0);
+    REQUIRE(combine_calls == 0);
+}
