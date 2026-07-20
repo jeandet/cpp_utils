@@ -43,6 +43,14 @@ namespace details
             _for_each(child(node, i), visitor);
     }
 
+    template <typename T, typename visitor_t>
+    void _for_each_post_order(T&& node, visitor_t& visitor)
+    {
+        for (std::size_t i = 0; i < children_count(node); i++)
+            _for_each_post_order(child(node, i), visitor);
+        visitor(node);
+    }
+
     template <typename T, typename U>
     void _print_tree(T&& tree, int indent_increment, int indent_lvl, U& ostream)
     {
@@ -65,11 +73,25 @@ namespace details
 }
 
 
+enum class traversal_order
+{
+    pre_order, // visit node, then children left-to-right (default)
+    post_order // visit children left-to-right, then node
+};
+
 template <typename T, typename visitor_t>
-void for_each(T&& tree, visitor_t&& visitor)
+void for_each(T&& tree, visitor_t&& visitor, traversal_order order = traversal_order::pre_order)
 {
     using namespace cpp_utils::types::pointers;
-    details::_for_each(to_value_ref(tree), visitor);
+    switch (order)
+    {
+        case traversal_order::pre_order:
+            details::_for_each(to_value_ref(tree), visitor);
+            break;
+        case traversal_order::post_order:
+            details::_for_each_post_order(to_value_ref(tree), visitor);
+            break;
+    }
 }
 
 template <typename T, typename U = decltype(std::cout), int indent_increment = 3>

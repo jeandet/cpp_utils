@@ -58,3 +58,25 @@ TEST_CASE("Depth-first traversal visits every node exactly once, root first", "[
         == std::vector<std::string> { "root", "node 0", "node 0", "node 1", "node 1", "node 0",
             "node 1", "node 2", "node 0", "node 1" });
 }
+
+TEST_CASE("Post-order traversal visits children before the node, root last", "[trees]")
+{
+    std::vector<std::string> visited;
+    for_each(
+        make_test_tree(), [&visited](auto& node) { visited.push_back(name(node)); },
+        traversal_order::post_order);
+    REQUIRE(visited
+        == std::vector<std::string> { "node 0", "node 1", "node 0", "node 0", "node 1", "node 1",
+            "node 0", "node 1", "node 2", "root" });
+}
+
+TEST_CASE("for_each with an explicit pre_order argument matches the default", "[trees]")
+{
+    std::vector<std::string> visited;
+    for_each(
+        make_test_tree(), [&visited](auto& node) { visited.push_back(name(node)); },
+        traversal_order::pre_order);
+    REQUIRE(visited
+        == std::vector<std::string> { "root", "node 0", "node 0", "node 1", "node 1", "node 0",
+            "node 1", "node 2", "node 0", "node 1" });
+}
