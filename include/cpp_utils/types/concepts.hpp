@@ -96,5 +96,11 @@ template <class F, class Input>
 concept chunk_for_each_callback = contiguous_sized_range<Input> &&
     std::invocable<F, std::span<std::ranges::range_value_t<Input>>>;
 
+/** chunk_transform_callback: F is invocable with a read-only input chunk and an output
+ * position — the per-chunk callback shape used by threading::parallel_chunks_transform. */
+template <class F, class Input, class Output>
+concept chunk_transform_callback = contiguous_sized_range<Input> &&
+    std::invocable<F, std::span<const std::ranges::range_value_t<Input>>, Output>;
+
 } // namespace cpp_utils::types::concepts
 

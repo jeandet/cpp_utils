@@ -44,4 +44,9 @@ TEST_CASE("Concepts", "[types]")
     REQUIRE((chunk_for_each_callback<decltype(good_for_each), std::vector<int>>));
     REQUIRE(!(chunk_for_each_callback<decltype(bad_arity), std::vector<int>>));
     REQUIRE(!(chunk_for_each_callback<decltype(bad_element_type), std::vector<int>>));
+
+    auto good_transform = [](std::span<const int>, int*) {};
+    auto bad_output_type = [](std::span<const int>, double*) {};
+    REQUIRE((chunk_transform_callback<decltype(good_transform), std::vector<int>, int*>));
+    REQUIRE(!(chunk_transform_callback<decltype(bad_output_type), std::vector<int>, int*>));
 }

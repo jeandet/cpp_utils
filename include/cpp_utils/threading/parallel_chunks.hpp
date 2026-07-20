@@ -88,4 +88,34 @@ void parallel_chunks_for_each(
     pool().wait();
 }
 
+// Same chunking as parallel_chunks_for_each, but pairs each read-only input chunk with the
+// matching output offset: f(input_subspan, output + start). output must point to storage
+// for at least std::ranges::size(input) elements — the caller's responsibility, not
+// validated here (matches parallel_for's existing no-bounds-checking assumption).
+template <typename Input, typename Output, typename F>
+    requires types::concepts::pointer_to_contiguous_memory<Output>
+          && types::concepts::chunk_transform_callback<F, Input, Output>
+void parallel_chunks_transform(const Input& input, Output output, std::size_t min_chunk_size,
+    F&& f, std::size_t chunk_count = 0)
+{
+    const std::size_t count = std::ranges::size(input);
+    if (count == 0)
+        return;
+
+    const auto [parallelize, effective_chunks]
+        = details::chunk_dispatch_plan(count, min_chunk_size, chunk_count);
+    if (!parallelize)
+    {
+        f(details::make_span(input, 0, count), output);
+        return;
+    }
+
+    pool().detach_blocks(
+        std::size_t { 0 }, count,
+        [&](std::size_t start, std::size_t end)
+        { f(details::make_span(input, start, end - start), output + start); },
+        effective_chunks);
+    pool().wait();
+}
+
 }
