@@ -22,7 +22,11 @@ else
   qt5_dep = disabler()
 endif
 
-bshoshany_thread_pool_dep = dependency('bshoshany-thread-pool')
+if get_option('threading')
+  bshoshany_thread_pool_dep = dependency('bshoshany-thread-pool')
+else
+  bshoshany_thread_pool_dep = disabler()
+endif
 
 tests = [
     {

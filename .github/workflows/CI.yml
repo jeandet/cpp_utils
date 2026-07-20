@@ -32,7 +32,7 @@ jobs:
       - name: Build and test
         run: |
           python -m pip install --upgrade meson ninja
-          meson setup build
+          meson setup build -Dthreading=true
           ninja -C build
           ninja -C build test
 

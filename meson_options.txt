@@ -1,2 +1,3 @@
 option('qt', type : 'boolean', value : false, description : 'Build tests with Qt support.')
+option('threading', type : 'boolean', value : false, description : 'Build tests with threading (bshoshany-thread-pool) support.')
 option('with_tests', type : 'boolean', value : true, description : 'Build tests')

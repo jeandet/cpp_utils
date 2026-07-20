@@ -33,13 +33,18 @@ Useful options (`meson_options.txt`):
 - `-Dwith_tests=false` — skip building/subdir'ing `tests/`.
 - `-Dqt=true` — also build the Qt-dependent test variants (`*_qt.cpp` files), which link Qt6
   Core/Widgets/Gui. Off by default.
+- `-Dthreading=true` — also build `TestParallelFor`, which needs the `bshoshany-thread-pool`
+  wrap. Off by default (mirrors `-Dqt=true`'s `disabler()` pattern exactly) so a plain
+  `meson setup` never needs network access for a dependency most builds don't use. CI's main
+  build-and-test job passes this on all platforms; there's no dedicated `threading` job like
+  the Qt one since no extra system package is needed, unlike Qt6.
 
 Dependencies are pulled via Meson subprojects/wraps (`subprojects/*.wrap`, vendored in
 `subprojects/packagecache`): `hedley` (portability macros, always required) and `catch2-with-main`
 (v3, tests only). No network access is needed if the wrap cache is present. `bshoshany-thread-pool`
-is a third wrap, but — like Qt — it is deliberately NOT part of `cpp_utils_dep`: only
-`threading/parallel_for.hpp` and its test need it, wired directly into that test's `deps` in
-`tests/meson.build`, so plain consumers of `cpp_utils_dep` never pull it in.
+is a third wrap, fetched only when `-Dthreading=true`; like Qt, it is deliberately NOT part of
+`cpp_utils_dep` — only `threading/parallel_for.hpp` and its test need it, wired directly into that
+test's `deps` in `tests/meson.build`, so plain consumers of `cpp_utils_dep` never pull it in.
 
 `include/cpp_utils/meson.build` generates `config.h` from `config.h.in` at configure time — it
 defines `CPP_UTILS_VERSION`. `types/concepts.hpp` no longer depends on `config.h`: concepts are
