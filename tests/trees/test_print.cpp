@@ -80,3 +80,14 @@ TEST_CASE("for_each with an explicit pre_order argument matches the default", "[
         == std::vector<std::string> { "root", "node 0", "node 0", "node 1", "node 1", "node 0",
             "node 1", "node 2", "node 0", "node 1" });
 }
+
+TEST_CASE("Breadth-first traversal visits level by level, root first", "[trees]")
+{
+    std::vector<std::string> visited;
+    for_each(
+        make_test_tree(), [&visited](auto& node) { visited.push_back(name(node)); },
+        traversal_order::breadth_first);
+    REQUIRE(visited
+        == std::vector<std::string> { "root", "node 0", "node 1", "node 2", "node 0", "node 1",
+            "node 0", "node 1", "node 0", "node 1" });
+}

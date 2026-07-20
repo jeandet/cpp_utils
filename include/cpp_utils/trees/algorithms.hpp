@@ -28,7 +28,10 @@
 #include "../types/detectors.hpp"
 #include "../types/pointers.hpp"
 #include "../types/strings.hpp"
+#include <functional>
 #include <iostream>
+#include <queue>
+#include <type_traits>
 
 namespace cpp_utils::trees
 {
@@ -49,6 +52,22 @@ namespace details
         for (std::size_t i = 0; i < children_count(node); i++)
             _for_each_post_order(child(node, i), visitor);
         visitor(node);
+    }
+
+    template <typename T, typename visitor_t>
+    void _for_each_breadth_first(T&& node, visitor_t& visitor)
+    {
+        using node_t = std::remove_reference_t<T>;
+        std::queue<std::reference_wrapper<node_t>> pending;
+        pending.push(node);
+        while (!pending.empty())
+        {
+            node_t& current = pending.front();
+            pending.pop();
+            visitor(current);
+            for (std::size_t i = 0; i < children_count(current); i++)
+                pending.push(child(current, i));
+        }
     }
 
     template <typename T, typename U>
@@ -75,8 +94,9 @@ namespace details
 
 enum class traversal_order
 {
-    pre_order, // visit node, then children left-to-right (default)
-    post_order // visit children left-to-right, then node
+    pre_order,    // visit node, then children left-to-right (default)
+    post_order,   // visit children left-to-right, then node
+    breadth_first // visit level by level, root first
 };
 
 template <typename T, typename visitor_t>
@@ -90,6 +110,9 @@ void for_each(T&& tree, visitor_t&& visitor, traversal_order order = traversal_o
             break;
         case traversal_order::post_order:
             details::_for_each_post_order(to_value_ref(tree), visitor);
+            break;
+        case traversal_order::breadth_first:
+            details::_for_each_breadth_first(to_value_ref(tree), visitor);
             break;
     }
 }
