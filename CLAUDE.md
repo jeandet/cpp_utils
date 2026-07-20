@@ -85,7 +85,13 @@ to the `headers` list in the root `meson.build` (new public headers must be adde
   ASCII-range case-folding only, not a full Unicode case-fold).
 - `threading/` — `parallel_for`/`parallel_for_each` over a lazily-initialized, hardware-
   concurrency-sized `BS::light_thread_pool` singleton. Needs the `bshoshany-thread-pool`
-  dependency explicitly (see Build & test above) — not part of `cpp_utils_dep`.
+  dependency explicitly (see Build & test above) — not part of `cpp_utils_dep`. Also
+  `parallel_chunks_for_each`/`parallel_chunks_transform`/`parallel_chunks_reduce`
+  (`parallel_chunks.hpp`) — chunk-based dispatch built on `BS::thread_pool`'s own
+  `detach_blocks`/`submit_blocks` block-splitting rather than hand-rolled chunk math, each
+  skipping the pool for a single serial call when the input is smaller than a caller-supplied
+  `min_chunk_size * chunk_count` threshold. Distinct from `parallel_for`: chunked functions
+  hand each chunk a contiguous `std::span` of real data, not a bare index.
 - `lifetime/` — RAII scope-leaving guards (run code on scope exit).
 - `io/` — `memory_mapped_file` (file-backed) and `buffer_view` (non-owning view over an
   in-memory buffer). Both satisfy `types::concepts::random_access_buffer`
