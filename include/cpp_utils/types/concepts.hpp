@@ -22,8 +22,10 @@
 --                            alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #include <concepts>
-#include <type_traits>
 #include <iterator>
+#include <ranges>
+#include <span>
+#include <type_traits>
 
 namespace cpp_utils::types::concepts
 {
@@ -81,6 +83,18 @@ concept random_access_buffer = requires(const T& t, char* dest, std::size_t offs
     { t.size() } -> std::convertible_to<std::size_t>;
     { t.is_valid() } -> std::convertible_to<bool>;
 };
+
+/** contiguous_sized_range: a range whose elements are contiguous in memory and whose size
+ * is known in O(1) — std::vector, std::array, std::span, no_init_vector, etc. Shared
+ * precondition for all threading::parallel_chunks_* input ranges. */
+template <class T>
+concept contiguous_sized_range = std::ranges::contiguous_range<T> && std::ranges::sized_range<T>;
+
+/** chunk_for_each_callback: F is invocable with a mutable span over Input's element type —
+ * the per-chunk callback shape used by threading::parallel_chunks_for_each. */
+template <class F, class Input>
+concept chunk_for_each_callback = contiguous_sized_range<Input> &&
+    std::invocable<F, std::span<std::ranges::range_value_t<Input>>>;
 
 } // namespace cpp_utils::types::concepts
 

@@ -4,6 +4,9 @@
 #include <types/concepts.hpp>
 #include <vector>
 #include <memory>
+#include <array>
+#include <list>
+#include <span>
 
 using namespace cpp_utils::types::concepts;
 bool test_function(pointer_to_contiguous_memory auto)
@@ -29,4 +32,16 @@ TEST_CASE("Concepts", "[types]")
     REQUIRE(random_access_buffer<cpp_utils::io::memory_mapped_file>);
     REQUIRE(!random_access_buffer<int>);
     REQUIRE(!random_access_buffer<std::vector<int>>);
+
+    REQUIRE(contiguous_sized_range<std::vector<int>>);
+    REQUIRE(contiguous_sized_range<std::array<int, 4>>);
+    REQUIRE(!contiguous_sized_range<std::list<int>>);
+    REQUIRE(!contiguous_sized_range<int>);
+
+    auto good_for_each = [](std::span<int>) {};
+    auto bad_arity = [](int) {};
+    auto bad_element_type = [](std::span<double>) {};
+    REQUIRE((chunk_for_each_callback<decltype(good_for_each), std::vector<int>>));
+    REQUIRE(!(chunk_for_each_callback<decltype(bad_arity), std::vector<int>>));
+    REQUIRE(!(chunk_for_each_callback<decltype(bad_element_type), std::vector<int>>));
 }
