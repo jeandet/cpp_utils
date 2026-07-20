@@ -79,7 +79,9 @@ to the `headers` list in the root `meson.build` (new public headers must be adde
   (`flat_index`/`permute_axes` — arbitrary-dimension-count N-D flat indexing and axis
   permutation, row-major or column-major).
 - `trees/` — a generic tree `node<T>` plus traversal algorithms and trait detection so trees can
-  be templated over user-supplied node-like types.
+  be templated over user-supplied node-like types. `for_each` takes an optional `traversal_order`
+  (`pre_order` default, `post_order`, `breadth_first`) selecting visit order at runtime, mirroring
+  `containers::array_order`'s default-argument-enum pattern.
 - `strings/` — small string algorithms, plus `fuzzy_match.hpp` (character/container-generic
   subsequence fuzzy-match scoring with word-boundary/camelCase bonuses — templated on `CharT`,
   ASCII-range case-folding only, not a full Unicode case-fold).
