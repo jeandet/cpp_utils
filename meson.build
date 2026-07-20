@@ -38,6 +38,7 @@ headers = files(
         'include/cpp_utils/strings/algorithms.hpp',
         'include/cpp_utils/strings/fuzzy_match.hpp',
         'include/cpp_utils/strings/traits.hpp',
+        'include/cpp_utils/threading/parallel_chunks.hpp',
         'include/cpp_utils/threading/parallel_for.hpp',
         'include/cpp_utils/trees/algorithms.hpp',
         'include/cpp_utils/trees/node.hpp',

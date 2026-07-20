@@ -170,6 +170,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep, bshoshany_thread_pool_dep]
     },
     {
+        'name':'TestParallelChunks',
+        'sources': ['threading/test_parallel_chunks.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep, bshoshany_thread_pool_dep]
+    },
+    {
         'name':'TestFuzzyMatch',
         'sources': ['strings/test_fuzzy_match.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
