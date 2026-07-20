@@ -91,3 +91,17 @@ TEST_CASE("Breadth-first traversal visits level by level, root first", "[trees]"
         == std::vector<std::string> { "root", "node 0", "node 1", "node 2", "node 0", "node 1",
             "node 0", "node 1", "node 0", "node 1" });
 }
+
+TEST_CASE("A single node with no children visits just itself under every traversal order",
+    "[trees]")
+{
+    for (auto order : { traversal_order::pre_order, traversal_order::post_order,
+             traversal_order::breadth_first })
+    {
+        std::vector<std::string> visited;
+        for_each(
+            std::make_unique<tree_node<>>("solo"),
+            [&visited](auto& node) { visited.push_back(name(node)); }, order);
+        REQUIRE(visited == std::vector<std::string> { "solo" });
+    }
+}
