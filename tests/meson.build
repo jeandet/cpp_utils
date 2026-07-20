@@ -140,6 +140,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestDynamicArray',
+        'sources': ['serde/test_dynamic_array.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestUnusedField',
         'sources': ['serde/test_unused_field.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

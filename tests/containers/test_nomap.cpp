@@ -1,6 +1,7 @@
 #define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this in one cpp file
 #include <catch2/catch_test_macros.hpp>
 #include <containers/nomap.hpp>
+#include <stdexcept>
 
 using namespace cpp_utils::containers;
 
@@ -41,4 +42,110 @@ TEST_CASE("nomap erase(first, last) removes exactly the requested count", "[Cont
     m.erase(m.cbegin(), m.cbegin() + 2);
 
     REQUIRE(m.size() == 2);
+}
+
+TEST_CASE("nomap operator[] with an rvalue key overwrites an existing key", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10; // rvalue-key overload, key not found -> insert
+    m[1] = 20; // rvalue-key overload, key found -> overwrite in place
+
+    REQUIRE(m.size() == 1);
+    REQUIRE(m[1] == 20);
+}
+
+TEST_CASE("nomap operator[] with an lvalue key inserts then overwrites", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    int key = 1;
+    m[key] = 10; // lvalue-key overload, key not found -> insert
+    m[key] = 20; // lvalue-key overload, key found -> overwrite in place
+
+    REQUIRE(m.size() == 1);
+    REQUIRE(m[key] == 20);
+}
+
+TEST_CASE("nomap find returns end() for a missing key", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+
+    REQUIRE(m.find(2) == m.end());
+    REQUIRE(m.find(1) != m.end());
+}
+
+TEST_CASE(
+    "nomap at() returns the value for a present key and throws out_of_range for a missing one",
+    "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+
+    REQUIRE(m.at(1) == 10);
+    REQUIRE_THROWS_AS(m.at(2), std::out_of_range);
+
+    const auto& cm = m;
+    REQUIRE(cm.at(1) == 10);
+    REQUIRE_THROWS_AS(cm.at(2), std::out_of_range);
+}
+
+TEST_CASE("nomap extract(key) removes and returns the matching element", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+    m[2] = 20;
+
+    auto node = m.extract(1);
+
+    REQUIRE_FALSE(node.empty());
+    REQUIRE(node.key() == 1);
+    REQUIRE(node.mapped() == 10);
+    REQUIRE(m.size() == 1);
+    REQUIRE(m.find(1) == m.end());
+}
+
+TEST_CASE(
+    "nomap extract(key) on a missing key returns an empty node and leaves the map untouched",
+    "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+
+    auto node = m.extract(2);
+
+    REQUIRE(node.empty());
+    REQUIRE(m.size() == 1);
+}
+
+TEST_CASE("nomap erase(iterator) removes the pointed-to element", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+    m[2] = 20;
+
+    auto next = m.erase(m.find(1));
+
+    REQUIRE(m.size() == 1);
+    REQUIRE(m.find(1) == m.end());
+    REQUIRE(next->first == 2);
+}
+
+TEST_CASE("nomap erase(iterator) on end() is a no-op that returns end()", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+
+    auto next = m.erase(m.end());
+
+    REQUIRE(m.size() == 1);
+    REQUIRE(next == m.end());
+}
+
+TEST_CASE("nomap count() reports key presence", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[1] = 10;
+
+    REQUIRE(m.count(1) == 1);
+    REQUIRE(m.count(2) == 0);
 }

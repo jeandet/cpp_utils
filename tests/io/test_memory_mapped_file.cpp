@@ -7,6 +7,12 @@
 #include <serde/serde.hpp>
 #include <string>
 
+#if defined(USE_MMAP) && defined(__linux__)
+#include <sys/resource.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#endif
+
 using namespace cpp_utils::io;
 
 TEST_CASE("memory_mapped_file maps an existing file for reading", "[io]")
@@ -105,5 +111,48 @@ TEST_CASE("a failed mmap() is not mistaken for a valid mapping", "[io]")
 
     int dummy = 0;
     REQUIRE(cpp_utils::io::details::checked_mmap(&dummy) == reinterpret_cast<char*>(&dummy));
+}
+#endif
+
+// Linux-only: forces a real open()-succeeds/mmap()-fails run through the
+// constructor by capping the child's address space (RLIMIT_AS) below what
+// mapping the file needs, to pin down the close(fd); fd = -1; cleanup path.
+// Isolated to a forked child so the cap can't affect the rest of the test
+// binary. Not run on macOS/BSD: RLIMIT_AS enforcement for mmap() there is
+// not verified to be as deterministic as on Linux.
+#if defined(USE_MMAP) && defined(__linux__)
+TEST_CASE("memory_mapped_file cleans up its fd when mmap() itself fails", "[io]")
+{
+    auto path = std::filesystem::temp_directory_path() / "cpp_utils_mmf_rlimit_test.bin";
+    {
+        std::ofstream out(path, std::ios::binary);
+        std::string payload(64 * 1024 * 1024, 'x');
+        out << payload;
+    }
+
+    pid_t pid = fork();
+    REQUIRE(pid >= 0);
+    if (pid == 0)
+    {
+        rlimit limit { 32UL * 1024 * 1024, 32UL * 1024 * 1024 };
+        if (setrlimit(RLIMIT_AS, &limit) != 0)
+            _exit(10);
+
+        memory_mapped_file f { path.string() };
+        if (f.is_valid())
+            _exit(1);
+        if (f.mapped_file != nullptr)
+            _exit(2);
+        if (f.fd != -1)
+            _exit(3);
+        _exit(0);
+    }
+
+    int status = 0;
+    REQUIRE(waitpid(pid, &status, 0) == pid);
+    REQUIRE(WIFEXITED(status));
+    REQUIRE(WEXITSTATUS(status) == 0);
+
+    std::filesystem::remove(path);
 }
 #endif

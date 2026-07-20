@@ -46,3 +46,16 @@ TEST_CASE("fuzzy_match returns a default (zero score, empty positions) result on
     REQUIRE(result.score == 0);
     REQUIRE(result.match_positions.empty());
 }
+
+TEST_CASE(
+    "fuzzy_match: empty query scores 1 with no positions, empty candidate scores 0",
+    "[strings]")
+{
+    auto empty_query = fuzzy_match<char>("", "anything");
+    REQUIRE(empty_query.score == 1);
+    REQUIRE(empty_query.match_positions.empty());
+
+    auto empty_candidate = fuzzy_match<char>("abc", "");
+    REQUIRE(empty_candidate.score == 0);
+    REQUIRE(empty_candidate.match_positions.empty());
+}
