@@ -70,3 +70,25 @@ TEST_CASE("serialize and byte_sink-based serialize agree on output bytes", "[ser
 
     REQUIRE(via_writer == via_byte_sink);
 }
+
+TEST_CASE("serialize writes a static_array through a sequential_writer sink", "[serde]")
+{
+    struct with_array
+    {
+        static_array<uint16_t, 3> values;
+    };
+    with_array w {};
+    w.values[0] = 1;
+    w.values[1] = 2;
+    w.values[2] = 3;
+
+    std::vector<char> via_writer;
+    vector_writer writer { via_writer };
+    serialize(w, writer);
+
+    std::vector<char> via_byte_sink;
+    serialize(w, via_byte_sink);
+
+    REQUIRE(via_writer == via_byte_sink);
+    REQUIRE(via_writer.size() == 6);
+}

@@ -82,16 +82,17 @@ namespace details
     {
         using T = std::decay_t<decltype(*values)>;
         using parent_composite_t = std::decay_t<decltype(parent_composite)>;
-        std::vector<char> buffer(sizeof(T) * count);
-        endianness::encode_v<endianness_t<parent_composite_t>>(values, count, buffer.data());
         if constexpr (io::sequential_writer<std::decay_t<decltype(sink)>>)
         {
+            std::vector<char> buffer(sizeof(T) * count);
+            endianness::encode_v<endianness_t<parent_composite_t>>(values, count, buffer.data());
             sink.write(buffer.data(), buffer.size());
         }
         else
         {
-            ensure_size(sink, offset + buffer.size());
-            std::memcpy(reinterpret_cast<char*>(sink.data()) + offset, buffer.data(), buffer.size());
+            ensure_size(sink, offset + sizeof(T) * count);
+            endianness::encode_v<endianness_t<parent_composite_t>>(
+                values, count, reinterpret_cast<char*>(sink.data()) + offset);
         }
     }
 }
