@@ -20,27 +20,37 @@ or codegen — a compile-time reflection layer walks the struct's fields for you
 
 ## Features
 
-- **Reflection over aggregates** (`reflexion/`) — count and iterate a plain struct's members at
-  compile time (up to 31 members) using only C++20 language features, no macros or codegen.
-- **Binary serde** (`serde/`) — symmetric `serialize`/`deserialize` for any reflectable struct,
-  with field wrappers for fixed/dynamic arrays, bounded strings, padding, unused/reserved bytes,
-  and fixed-point scaled values.
-- **Endianness helpers** (`endianness/`) — compile-time-aware byte-swapping decode/encode,
-  per-struct opt-in big-endian wire order.
-- **Buffer/IO abstractions** (`io/`) — `memory_mapped_file` and `buffer_view`, both usable
-  interchangeably as `serde::deserialize` inputs.
-- **Containers** (`containers/`) — `no_init_vector` (skips value-initialization for
-  perf-sensitive buffers), `nomap` (vector-backed associative container), small algorithms
-  (`contains`, `index_of`, `split`, `join`, `broadcast`, ...).
-- **Trees** (`trees/`) — a generic `node<T>` plus traversal (`for_each`, `print_tree`) that works
-  over user-supplied tree-like types.
-- **Strings** (`strings/`) — `trim`/`ltrim`/`rtrim`, `make_unique_name`.
-- **Lifetime** (`lifetime/`) — RAII scope-leaving guards.
-- **Concepts & type traits** (`types/`) — `random_access_buffer`, `container`,
-  `contiguous_sequence_container`, member/method detection idioms, smart-pointer helpers,
-  integer helpers.
-- **Optional Qt support** (`cpp_utils_qt/`) — Qt<->native type traits and tree traits, kept out
-  of the core headers so non-Qt consumers never pull in Qt.
+- **Reflection over aggregates** (`reflexion/`, [docs](docs/api/reflexion.md)) — count and
+  iterate a plain struct's members at compile time (up to 31 members) using only C++20 language
+  features, no macros or codegen.
+- **Binary serde** (`serde/`, [docs](docs/api/serde.md)) — symmetric `serialize`/`deserialize`
+  for any reflectable struct, with field wrappers for fixed/dynamic arrays, bounded strings,
+  padding, unused/reserved bytes, and fixed-point scaled values.
+- **Endianness helpers** (`endianness/`, [docs](docs/api/endianness.md)) —
+  compile-time-aware byte-swapping decode/encode, per-struct opt-in big-endian wire order.
+- **Buffer/IO abstractions** (`io/`, [docs](docs/api/io.md)) — `memory_mapped_file` and
+  `buffer_view`, both usable interchangeably as `serde::deserialize` inputs.
+- **Containers** (`containers/`, [docs](docs/api/containers.md)) — `no_init_vector` (skips
+  value-initialization for perf-sensitive buffers), `nomap` (vector-backed associative
+  container), small algorithms (`contains`, `index_of`, `split`, `join`, `broadcast`, ...),
+  N-D shape helpers (`flat_index`, `permute_axes`).
+- **Trees** (`trees/`, [docs](docs/api/trees.md)) — a generic `tree_node<T>` plus traversal
+  (`for_each`, `print_tree`) that works over user-supplied tree-like types.
+- **Strings** (`strings/`, [docs](docs/api/strings.md)) — `trim`/`ltrim`/`rtrim`,
+  `make_unique_name`, `fuzzy_match`.
+- **Lifetime** (`lifetime/`, [docs](docs/api/lifetime.md)) — RAII scope-leaving guards.
+- **Concepts & type traits** (`types/`, [docs](docs/api/types.md)) — `random_access_buffer`,
+  `container`, `contiguous_sequence_container`, member/method detection idioms, smart-pointer
+  helpers, integer helpers, `Visitor<Ts...>`, `dispatch_dtype`.
+- **Parallelism** (`threading/`, [docs](docs/api/threading.md), opt-in via `-Dthreading=true`)
+  — `parallel_for`/`parallel_for_each`, plus span-based `parallel_chunks_for_each`/
+  `_transform`/`_reduce`.
+- **Optional Qt support** (`cpp_utils_qt/`, [docs](docs/api/cpp_utils_qt.md), opt-in via
+  `-Dqt=true`) — Qt<->native type traits and tree traits, kept out of the core headers so
+  non-Qt consumers never pull in Qt.
+
+See [`docs/api/`](docs/api/) for the full API reference — one page per module, documenting every
+public symbol with real, verified-accurate usage examples.
 
 ## Requirements
 

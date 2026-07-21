@@ -10,6 +10,12 @@ serialization via reflection, endianness-aware decoding, container helpers, stri
 algorithms, and optional Qt type traits. Almost all logic lives in `include/cpp_utils/`; there is
 no `.cpp` source beyond tests.
 
+`docs/api/` has one Markdown page per module (`docs/api/README.md` is the index) documenting every
+public symbol with its real signature and a verified usage example — linked from the main
+[README](README.md)'s Features section. Prefer reading the relevant page there over re-deriving a
+public API from source when the two might disagree; update the page (not just the header) when you
+change a public symbol's signature or behavior.
+
 ## Build & test
 
 Build system is Meson + Ninja (`meson_version >= 1.2.0`).
@@ -78,7 +84,7 @@ to the `headers` list in the root `meson.build` (new public headers must be adde
   (`algorithms.hpp` also has `flat_size` — shape-product/element-count helper), `nd_shape.hpp`
   (`flat_index`/`permute_axes` — arbitrary-dimension-count N-D flat indexing and axis
   permutation, row-major or column-major).
-- `trees/` — a generic tree `node<T>` plus traversal algorithms and trait detection so trees can
+- `trees/` — a generic tree `tree_node<T>` plus traversal algorithms and trait detection so trees can
   be templated over user-supplied node-like types. `for_each` takes an optional `traversal_order`
   (`pre_order` default, `post_order`, `breadth_first`) selecting visit order at runtime, mirroring
   `containers::array_order`'s default-argument-enum pattern.
