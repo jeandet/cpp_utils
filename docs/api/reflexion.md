@@ -170,11 +170,11 @@ static_assert(cpp_utils::reflexion::composite_size<nested_fixed>()
     == sizeof(point) + sizeof(int));
 ```
 
-Note: a fixed-size C array member is counted as a single field by `count_members` (see above), but
-is not sized correctly by `composite_size`/`field_size` — decaying the array to a pointer at the
-structured-binding step defeats the size computation for that field. Wire-format structs needing a
-fixed-size array field should use a dedicated wrapper type that reports its own size (e.g. via a
-`wire_size` member, the convention `serde`'s field-wrapper types use) rather than a bare C array.
+A fixed-size C array member is sized correctly too — `composite_size` reports its full
+`sizeof` (`char buf[8]` contributes 8 bytes, matching `count_members` treating it as one field,
+see above). Wire-format structs still generally prefer a dedicated wrapper type over a bare C
+array (e.g. `serde::static_array<T, N>`) for the richer API — indexing, iteration, `wire_size` —
+those wrappers provide, not because a bare array is mis-sized.
 
 ## field_size
 

@@ -30,8 +30,17 @@ static_assert(cpp_utils::reflexion::count_members<five_members> == 5);
 static_assert(cpp_utils::reflexion::count_members<thirty_one_members> == 31);
 static_assert(cpp_utils::reflexion::count_members<with_c_array_member> == 3);
 
+static_assert(cpp_utils::reflexion::composite_size<with_c_array_member>()
+    == 2 * sizeof(int) + sizeof(with_c_array_member::buf));
+
 TEST_CASE("count_members compile-time checks", "[reflexion]")
 {
     REQUIRE(cpp_utils::reflexion::count_members<one_member> == 1);
     REQUIRE(cpp_utils::reflexion::count_members<with_c_array_member> == 3);
+}
+
+TEST_CASE("composite_size accounts for fixed-size C-array members", "[reflexion]")
+{
+    REQUIRE(cpp_utils::reflexion::composite_size<with_c_array_member>()
+        == 2 * sizeof(int) + sizeof(with_c_array_member::buf));
 }

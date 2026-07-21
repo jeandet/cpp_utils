@@ -401,7 +401,7 @@ template <typename field_t>
 
 [[nodiscard]] constexpr inline bool fields_have_const_size(const auto&, auto& field)
 {
-    using Field_t = std::decay_t<decltype(field)>;
+    using Field_t = std::remove_cvref_t<decltype(field)>;
     if constexpr (std::is_compound_v<Field_t> && !std::is_bounded_array_v<Field_t>
         && can_split_v<Field_t>)
         return composite_have_const_size<Field_t>();
@@ -439,10 +439,10 @@ consteval std::size_t composite_size();
 template <typename field_t>
 [[nodiscard]] consteval std::size_t field_size()
 {
-    using Field_t = std::decay_t<field_t>;
+    using Field_t = std::remove_cvref_t<field_t>;
     static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
     if constexpr (std::is_bounded_array_v<Field_t>)
-        return sizeof(Field_t) * std::extent_v<Field_t>;
+        return sizeof(Field_t);
     if constexpr (requires { Field_t::wire_size; })
         return Field_t::wire_size;
     if constexpr (can_split_v<Field_t>)
@@ -457,7 +457,7 @@ template <typename field_t>
 
 [[nodiscard]] constexpr inline std::size_t fields_size(const auto&, auto& field)
 {
-    using Field_t = std::decay_t<decltype(field)>;
+    using Field_t = std::remove_cvref_t<decltype(field)>;
     static_assert(!is_dyn_size_field_v<Field_t>, "Dynamic size fields are not supported here");
     if constexpr (can_split_v<Field_t> && !std::is_bounded_array_v<Field_t>)
         return composite_size<Field_t>();
