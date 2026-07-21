@@ -45,6 +45,27 @@ TEST_CASE("nomap erase(first, last) removes exactly the requested count", "[Cont
     REQUIRE(m.size() == 2);
 }
 
+TEST_CASE("nomap erase(first, last) removes exactly the targeted keys, not substitutes from the tail",
+    "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[0] = 0;
+    m[1] = 1;
+    m[2] = 2;
+    m[3] = 3;
+    m[4] = 4;
+
+    // erase the middle range [1, 3) -- keys 1 and 2
+    m.erase(m.begin() + 1, m.begin() + 3);
+
+    REQUIRE(m.size() == 3);
+    REQUIRE(m.find(1) == m.end());
+    REQUIRE(m.find(2) == m.end());
+    REQUIRE(m.find(0) != m.end());
+    REQUIRE(m.find(3) != m.end());
+    REQUIRE(m.find(4) != m.end());
+}
+
 TEST_CASE("nomap operator[] with an rvalue key overwrites an existing key", "[Containers][nomap]")
 {
     nomap<int, int> m;
@@ -163,4 +184,32 @@ TEST_CASE("nomap count() reports key presence", "[Containers][nomap]")
 
     REQUIRE(m.count(1) == 1);
     REQUIRE(m.count(2) == 0);
+}
+
+TEST_CASE("nomap operator== compares equal maps as equal", "[Containers][nomap]")
+{
+    nomap<int, int> a;
+    a[1] = 10;
+    a[2] = 20;
+    nomap<int, int> b;
+    b[1] = 10;
+    b[2] = 20;
+
+    REQUIRE(a == b);
+    REQUIRE_FALSE(a != b);
+}
+
+TEST_CASE(
+    "nomap operator== is not fooled by a superset -- a subset must not compare equal",
+    "[Containers][nomap]")
+{
+    nomap<int, int> small_map;
+    small_map[1] = 10;
+    nomap<int, int> big_map;
+    big_map[1] = 10;
+    big_map[2] = 20;
+
+    REQUIRE_FALSE(small_map == big_map);
+    REQUIRE_FALSE(big_map == small_map);
+    REQUIRE(small_map != big_map);
 }
