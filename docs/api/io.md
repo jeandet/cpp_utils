@@ -264,7 +264,7 @@ auto value = cpp_utils::serde::deserialize<wire_pair>(
 ```
 
 The write-side counterpart to the read-side `buffer_view`/`owned_buffer`/`memory_mapped_file` types.
-Three types satisfy the `sequential_writer` concept: `vector_writer`, which appends into an in-memory
+Two types satisfy the `sequential_writer` concept: `vector_writer`, which appends into an in-memory
 resizable container; and `file_writer`, which streams bytes directly to disk without materializing
 the output in memory.
 
