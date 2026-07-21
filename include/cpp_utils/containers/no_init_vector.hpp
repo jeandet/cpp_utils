@@ -24,11 +24,10 @@
 -- Mail : alexis.jeandet@member.fsf.org
 ----------------------------------------------------------------------------*/
 #pragma once
+#include <cstdlib>
 #include <memory>
-#include <string.h>
 #include <vector>
 #if __has_include(<sys/mman.h>)
-#include <stdlib.h>
 #include <sys/mman.h>
 #endif
 
@@ -68,50 +67,46 @@ public:
         a_t::construct(static_cast<A&>(*this), ptr, std::forward<Args>(args)...);
     }
 
-#if __has_include(<sys/mman.h>)
-    template <bool U = is_trivial_and_nothrow_default_constructible>
-    T* allocate(std::size_t pCount, const T* = 0, typename std::enable_if<U>::type* = 0)
+    T* allocate(std::size_t pCount)
     {
-        void* mem = 0;
-        auto bytes = sizeof(T) * pCount;
-        if (bytes >= 2 * page_size)
+        if constexpr (is_trivial_and_nothrow_default_constructible)
         {
-            if (::posix_memalign(&mem, page_size, sizeof(T) * pCount) != 0)
+            void* mem = 0;
+            auto bytes = sizeof(T) * pCount;
+#if __has_include(<sys/mman.h>)
+            if (bytes >= 2 * page_size)
             {
-                throw std::bad_alloc(); // or something
-            }
+                if (::posix_memalign(&mem, page_size, sizeof(T) * pCount) != 0)
+                {
+                    throw std::bad_alloc();
+                }
 #ifdef MADV_HUGEPAGE
-            ::madvise(mem, pCount * sizeof(T), MADV_HUGEPAGE);
+                ::madvise(mem, pCount * sizeof(T), MADV_HUGEPAGE);
 #endif
+                ::madvise(mem, pCount * sizeof(T), MADV_WILLNEED);
+            }
+            else
+#endif
+            {
+                mem = ::malloc(bytes);
+                if (!mem)
+                    throw std::bad_alloc();
+            }
+            return reinterpret_cast<T*>(mem);
         }
         else
         {
-            mem = ::malloc(bytes);
+            return A::allocate(pCount);
         }
-        //::memset(reinterpret_cast<char*>(mem),0x9e,bytes);
-        return reinterpret_cast<T*>(mem);
     }
 
-    template <bool U = is_trivial_and_nothrow_default_constructible>
-    T* allocate(std::size_t pCount, const T* ptr = 0, typename std::enable_if<!U>::type* = 0)
+    void deallocate(T* ptr, std::size_t sz) noexcept(std::is_nothrow_default_constructible_v<T>)
     {
-        return A::allocate(pCount, ptr);
+        if constexpr (is_trivial_and_nothrow_default_constructible)
+            ::free(ptr);
+        else
+            A::deallocate(ptr, sz);
     }
-
-    template <bool U = is_trivial_and_nothrow_default_constructible>
-    void deallocate(T* ptr, std::size_t, typename std::enable_if<U>::type* = 0) noexcept(
-        std::is_nothrow_default_constructible<T>::value)
-    {
-        ::free(ptr);
-    }
-
-    template <bool U = is_trivial_and_nothrow_default_constructible>
-    void deallocate(T* ptr, std::size_t sz, typename std::enable_if<!U>::type* = 0) noexcept(
-        std::is_nothrow_default_constructible<T>::value)
-    {
-        A::deallocate(ptr, sz);
-    }
-#endif
 };
 
 template <typename T>

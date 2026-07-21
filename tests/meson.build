@@ -90,6 +90,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestNoInitVector',
+        'sources': ['containers/test_no_init_vector.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestStringsAlgs',
         'sources': ['strings/test_strings_algorithms.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
