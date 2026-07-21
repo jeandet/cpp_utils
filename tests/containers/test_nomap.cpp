@@ -2,6 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <containers/nomap.hpp>
 #include <stdexcept>
+#include <string>
 
 using namespace cpp_utils::containers;
 
@@ -139,6 +140,20 @@ TEST_CASE("nomap erase(iterator) on end() is a no-op that returns end()", "[Cont
 
     REQUIRE(m.size() == 1);
     REQUIRE(next == m.end());
+}
+
+TEST_CASE("nomap erase(const_iterator) removes the pointed-to element", "[Containers][nomap]")
+{
+    nomap<std::string, int> m;
+    m["a"] = 10;
+    m["b"] = 20;
+
+    nomap<std::string, int>::const_iterator it = m.find("a");
+    auto next = m.erase(it);
+
+    REQUIRE(m.size() == 1);
+    REQUIRE(m.find("a") == m.end());
+    REQUIRE(next->first == "b");
 }
 
 TEST_CASE("nomap count() reports key presence", "[Containers][nomap]")

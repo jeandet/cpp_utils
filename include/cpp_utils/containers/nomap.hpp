@@ -221,7 +221,7 @@ struct nomap
         if (position != cend())
         {
             auto next_idx = (position - cbegin());
-            std::swap(*position, p_nodes.back());
+            std::swap(p_nodes[next_idx], p_nodes.back());
             p_nodes.pop_back();
             return cbegin() + next_idx;
         }
