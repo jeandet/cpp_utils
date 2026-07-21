@@ -28,6 +28,7 @@ headers = files(
         'include/cpp_utils/io/buffer_view.hpp',
         'include/cpp_utils/io/memory_mapped_file.hpp',
         'include/cpp_utils/io/owned_buffer.hpp',
+        'include/cpp_utils/io/sequential_writer.hpp',
         'include/cpp_utils/lifetime/scope_leaving_guards.hpp',
         'include/cpp_utils/reflexion/reflection.hpp',
         'include/cpp_utils/serde/context.hpp',

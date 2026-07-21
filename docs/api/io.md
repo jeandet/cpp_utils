@@ -256,3 +256,106 @@ auto value = cpp_utils::serde::deserialize<wire_pair>(
 );
 // value.a == 5, value.b == 9
 ```
+
+## sequential_writer
+
+```cpp
+#include <io/sequential_writer.hpp>
+```
+
+The write-side counterpart to the read-side `buffer_view`/`owned_buffer`/`memory_mapped_file` types.
+Three types satisfy the `sequential_writer` concept: `vector_writer`, which appends into an in-memory
+resizable container; and `file_writer`, which streams bytes directly to disk without materializing
+the output in memory.
+
+### sequential_writer concept
+
+```cpp
+template <typename T>
+concept sequential_writer = requires(T t, const char* p, std::size_t n, char v) {
+    { t.write(p, n) } -> std::convertible_to<std::size_t>;
+    { t.fill(v, n) } -> std::convertible_to<std::size_t>;
+    { t.offset() } -> std::convertible_to<std::size_t>;
+};
+```
+
+Any type satisfying this concept can be passed to `serde::serialize` (in Task 3 and beyond).
+All three methods return the new cursor position after the operation.
+
+## vector_writer
+
+Appends into any in-memory, resizable byte container (a `std::vector<char>`, a `no_init_vector<char>`,
+or a `cpp_utils::serde dynamic_array_bytes` field) that grows as bytes are written. Non-owning:
+the container's lifetime is the caller's responsibility.
+
+```cpp
+template <typename Container>
+struct vector_writer
+{
+    explicit vector_writer(Container& data);
+
+    std::size_t write(const char* data_ptr, std::size_t count);
+    std::size_t fill(char v, std::size_t count);
+    [[nodiscard]] std::size_t offset() const noexcept;
+};
+```
+
+- `explicit vector_writer(Container& data)` — wraps a reference to `data`. CTAD is enabled via a
+  deduction guide, so `vector_writer { my_vector }` deduces the container type automatically.
+- `write(data_ptr, count)` — appends `count` bytes starting at `data_ptr` and returns the new cursor
+  position.
+- `fill(v, count)` — appends `count` copies of byte `v` and returns the new cursor position.
+- `offset()` — returns the current cursor position (bytes written so far).
+
+```cpp
+std::vector<char> data;
+cpp_utils::io::vector_writer writer { data };
+
+writer.write("hello", 5);    // returns 5
+writer.fill(' ', 1);         // returns 6
+writer.offset();             // 6
+
+std::string(data.data(), data.size());  // "hello "
+```
+
+## file_writer
+
+Streams bytes straight to an `fstream` without materializing the output in memory first — needed
+for bounded-memory saves of potentially gigabyte-scale files.
+
+```cpp
+struct file_writer
+{
+    explicit file_writer(const std::string& fname);
+    ~file_writer();
+
+    [[nodiscard]] bool is_open() const noexcept;
+    std::size_t write(const char* data_ptr, std::size_t count);
+    std::size_t fill(char v, std::size_t count);
+    [[nodiscard]] std::size_t offset() const noexcept;
+};
+```
+
+- `explicit file_writer(const std::string& fname)` — opens `fname` for writing in binary mode,
+  truncating any existing content. The file is closed automatically in the destructor.
+- `write(data_ptr, count)` — writes `count` bytes starting at `data_ptr` directly to disk and
+  returns the new cursor position.
+- `fill(v, count)` — writes `count` copies of byte `v` directly to disk and returns the new cursor
+  position.
+- `offset()` — returns the total bytes written so far (not the file position on disk, which may
+  differ due to buffering).
+- `is_open()` — returns `true` iff the file was successfully opened.
+
+```cpp
+cpp_utils::io::file_writer writer { "output.bin" };
+if (!writer.is_open())
+{
+    // handle error
+}
+
+writer.write("hello", 5);
+writer.fill(' ', 1);
+writer.offset();             // 6
+
+// file closed automatically when writer is destroyed
+```
