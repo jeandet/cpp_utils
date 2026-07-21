@@ -1,10 +1,11 @@
 # io
 
-Two byte-buffer types: `buffer_view`, a non-owning view over memory you already have, and
-`memory_mapped_file`, a file-backed buffer opened via `mmap`/`MapViewOfFile`. Both satisfy the
-same `types::concepts::random_access_buffer` shape (`read`/`view`/`size`/`is_valid`) and
-`std::ranges::contiguous_range`, so they're interchangeable: either can be passed directly to
-`serde::deserialize`, and code written against one works unmodified against the other.
+Three byte-buffer types: `buffer_view`, a non-owning view over memory you already have;
+`memory_mapped_file`, a file-backed buffer opened via `mmap`/`MapViewOfFile`; and `owned_buffer`,
+an owning buffer backed by `no_init_vector`. All satisfy the same `types::concepts::random_access_buffer`
+shape (`read`/`view`/`size`/`is_valid`) and `std::ranges::contiguous_range`, so they're
+interchangeable: any can be passed directly to `serde::deserialize`, and code written against one
+works unmodified against the others.
 
 ## buffer_view
 
@@ -175,4 +176,83 @@ memory_mapped_file f { "data.bin" };
 
 auto value = cpp_utils::serde::deserialize<wire_pair>(f);                  // direct
 auto same  = cpp_utils::serde::deserialize<wire_pair>(f.as_span<std::byte>()); // via span
+```
+
+## owned_buffer
+
+```cpp
+#include <io/owned_buffer.hpp>
+```
+
+Owning counterpart to `buffer_view`: holds a `no_init_vector<char>` by value and exposes the same
+`random_access_buffer` shape (`read`/`view`/`size`/`is_valid`) and contiguous-range interface.
+Use it for buffers whose lifetime must outlive their producer — e.g. a freshly-decompressed payload
+that has no natural home.
+
+```cpp
+struct owned_buffer
+{
+    owned_buffer() = default;
+    explicit owned_buffer(containers::no_init_vector<char>&& storage);
+};
+```
+
+- `owned_buffer()` — default-constructed, wraps an empty vector; `is_valid()` returns `false`.
+- `explicit owned_buffer(containers::no_init_vector<char>&& storage)` — takes ownership of
+  `storage`. Any code holding an `owned_buffer` owns the underlying allocation.
+
+```cpp
+cpp_utils::containers::no_init_vector<char> data(5);
+std::memcpy(data.data(), "hello", 5);
+
+owned_buffer b { std::move(data) };
+
+b.is_valid();                          // true
+b.size();                              // 5
+std::string(b.data(), b.size());       // "hello"
+```
+
+### Methods
+
+- `void read(char* dest, std::size_t offset, std::size_t size) const` — copies `size` bytes
+  starting at `offset` into `dest` (`std::memcpy` under the hood; no bounds checking).
+- `auto view(std::size_t offset) const` — returns a zero-copy `const char*` pointing at
+  `offset` within the buffer.
+- `auto data() const` / `std::size_t size() const` — pointer to the start of the buffer, and
+  its length in bytes.
+- `bool is_valid() const` — `true` iff the backing vector has a non-null data pointer. A
+  default-constructed `owned_buffer` is invalid.
+- `begin()` / `end()` — contiguous-range iterators (`const char*`), enabling
+  `std::ranges::contiguous_range<owned_buffer>`.
+
+```cpp
+char dest[3] {};
+b.read(dest, 1, 3);
+std::string(dest, 3);      // "ell"
+
+*b.view(4);                // 'o'
+
+owned_buffer empty;
+empty.is_valid();          // false
+```
+
+### With serde
+
+```cpp
+#include <io/owned_buffer.hpp>
+#include <serde/serde.hpp>
+
+struct wire_pair
+{
+    uint8_t a;
+    uint8_t b;
+};
+
+cpp_utils::containers::no_init_vector<char> data(2);
+std::memcpy(data.data(), "\x05\x09", 2);
+
+auto value = cpp_utils::serde::deserialize<wire_pair>(
+    owned_buffer { std::move(data) }
+);
+// value.a == 5, value.b == 9
 ```
