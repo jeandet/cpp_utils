@@ -25,6 +25,7 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include "../endianness/endianness.hpp"
+#include "../io/sequential_writer.hpp"
 #include "../reflexion/reflection.hpp"
 #include "../types/concepts.hpp"
 #include "context.hpp"
@@ -44,6 +45,9 @@ concept byte_sink = requires(T t, std::size_t n) {
     { t.size() } -> std::convertible_to<std::size_t>;
 };
 
+template <typename T>
+concept serde_sink = byte_sink<T> || io::sequential_writer<T>;
+
 SPLIT_FIELDS_FW_DECL(constexpr std::size_t, serialize_fields, const);
 
 namespace details
@@ -54,29 +58,45 @@ namespace details
             sink.resize(needed);
     }
 
-    void _save_value_to_memory(byte_sink auto& sink, std::size_t offset,
+    void _save_value_to_memory(serde_sink auto& sink, std::size_t offset,
         types::concepts::fundamental_type auto value, const auto& parent_composite)
     {
         using T = std::decay_t<decltype(value)>;
         using parent_composite_t = std::decay_t<decltype(parent_composite)>;
-        ensure_size(sink, offset + sizeof(T));
-        endianness::encode<endianness_t<parent_composite_t>>(
-            value, reinterpret_cast<char*>(sink.data()) + offset);
+        char buffer[sizeof(T)];
+        endianness::encode<endianness_t<parent_composite_t>>(value, buffer);
+        if constexpr (io::sequential_writer<std::decay_t<decltype(sink)>>)
+        {
+            sink.write(buffer, sizeof(T));
+        }
+        else
+        {
+            ensure_size(sink, offset + sizeof(T));
+            std::memcpy(reinterpret_cast<char*>(sink.data()) + offset, buffer, sizeof(T));
+        }
     }
 
-    void _save_values_to_memory(byte_sink auto& sink, std::size_t offset,
+    void _save_values_to_memory(serde_sink auto& sink, std::size_t offset,
         const types::concepts::fundamental_type auto* values, std::size_t count,
         const auto& parent_composite)
     {
         using T = std::decay_t<decltype(*values)>;
         using parent_composite_t = std::decay_t<decltype(parent_composite)>;
-        ensure_size(sink, offset + sizeof(T) * count);
-        endianness::encode_v<endianness_t<parent_composite_t>>(
-            values, count, reinterpret_cast<char*>(sink.data()) + offset);
+        std::vector<char> buffer(sizeof(T) * count);
+        endianness::encode_v<endianness_t<parent_composite_t>>(values, count, buffer.data());
+        if constexpr (io::sequential_writer<std::decay_t<decltype(sink)>>)
+        {
+            sink.write(buffer.data(), buffer.size());
+        }
+        else
+        {
+            ensure_size(sink, offset + buffer.size());
+            std::memcpy(reinterpret_cast<char*>(sink.data()) + offset, buffer.data(), buffer.size());
+        }
     }
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, types::concepts::fundamental_type auto field)
 {
     (void)context;
@@ -84,7 +104,7 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
     return offset + sizeof(field);
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, types::concepts::enum_type auto field)
 {
     using underlying_t = std::underlying_type_t<std::decay_t<decltype(field)>>;
@@ -92,7 +112,7 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
         parent_composite, sink, offset, context, static_cast<underlying_t>(field));
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, const dynamic_array_field auto& array_field)
 {
     using array_field_t = std::decay_t<decltype(array_field)>;
@@ -113,7 +133,7 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
     }
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, const dynamic_array_bytes_field auto& array_field)
 {
     (void)context;
@@ -125,7 +145,7 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
     return offset + sizeof(field_t) * count;
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, const static_array_field auto& array_field)
 {
     (void)context;
@@ -137,28 +157,41 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
 }
 
 template <std::size_t size, uint8_t value>
-constexpr inline std::size_t save_field(const auto&, byte_sink auto& sink, std::size_t offset,
+constexpr inline std::size_t save_field(const auto&, serde_sink auto& sink, std::size_t offset,
     const auto&, const padding_bytes_t<size, value>&)
 {
-    details::ensure_size(sink, offset + size);
-    std::memset(reinterpret_cast<char*>(sink.data()) + offset, value, size);
+    if constexpr (io::sequential_writer<std::decay_t<decltype(sink)>>)
+    {
+        sink.fill(static_cast<char>(value), size);
+    }
+    else
+    {
+        details::ensure_size(sink, offset + size);
+        std::memset(reinterpret_cast<char*>(sink.data()) + offset, value, size);
+    }
     return offset + size;
 }
 
-constexpr inline std::size_t save_field(const auto&, byte_sink auto& sink, std::size_t offset,
+constexpr inline std::size_t save_field(const auto&, serde_sink auto& sink, std::size_t offset,
     const auto&, const bounded_string_field auto& field)
 {
     using field_t = std::decay_t<decltype(field)>;
-    details::ensure_size(sink, offset + field_t::max_len);
-    auto* out = reinterpret_cast<char*>(sink.data()) + offset;
+    char buffer[field_t::max_len] {};
     const auto copy_len = std::min(field.value.size(), field_t::max_len);
-    std::memcpy(out, field.value.data(), copy_len);
-    if (copy_len < field_t::max_len)
-        std::memset(out + copy_len, 0, field_t::max_len - copy_len);
+    std::memcpy(buffer, field.value.data(), copy_len);
+    if constexpr (io::sequential_writer<std::decay_t<decltype(sink)>>)
+    {
+        sink.write(buffer, field_t::max_len);
+    }
+    else
+    {
+        details::ensure_size(sink, offset + field_t::max_len);
+        std::memcpy(reinterpret_cast<char*>(sink.data()) + offset, buffer, field_t::max_len);
+    }
     return offset + field_t::max_len;
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, const scaled_field auto& field)
 {
     using field_t = std::decay_t<decltype(field)>;
@@ -168,7 +201,7 @@ constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink 
     return save_field(parent_composite, sink, offset, context, raw);
 }
 
-constexpr inline std::size_t save_field(const auto& parent_composite, byte_sink auto& sink,
+constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink auto& sink,
     std::size_t offset, const auto& context, const unused_field auto& field)
 {
     using field_t = std::decay_t<decltype(field)>;
@@ -209,7 +242,7 @@ constexpr inline std::size_t save_fields(const composite_t& r, sink_t& sink,
 
 SPLIT_FIELDS(constexpr std::size_t, serialize_fields, save_fields, const);
 
-template <typename composite_t, byte_sink sink_t, typename context_t = no_context>
+template <typename composite_t, serde_sink sink_t, typename context_t = no_context>
 constexpr std::size_t serialize(const composite_t& value, sink_t& sink,
     std::size_t offset = 0, const context_t& context = context_t {})
 {

@@ -140,6 +140,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestSerializeSequentialWriter',
+        'sources': ['serde/test_serialize_sequential_writer.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestCountMembers',
         'sources': ['reflexion/test_count_members.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
