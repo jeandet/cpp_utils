@@ -5,6 +5,7 @@
 #include <io/owned_buffer.hpp>
 #include <serde/serde.hpp>
 #include <string>
+#include <vector>
 
 using namespace cpp_utils::io;
 using cpp_utils::containers::no_init_vector;
@@ -62,4 +63,17 @@ TEST_CASE("owned_buffer feeds serde::deserialize directly", "[io]")
     auto value = cpp_utils::serde::deserialize<wire_pair>(owned_buffer { make_storage({ 5, 9 }) });
     REQUIRE(value.a == 5);
     REQUIRE(value.b == 9);
+}
+
+TEST_CASE("owned_buffer_t genuinely moves an arbitrary contiguous storage, no copy", "[io]")
+{
+    std::vector<char> storage { 'h', 'e', 'l', 'l', 'o' };
+    const char* original_ptr = storage.data();
+
+    owned_buffer_t<std::vector<char>> b { std::move(storage) };
+
+    REQUIRE(storage.data() == nullptr); // moved-from: source relinquished its buffer
+    REQUIRE(b.data() == original_ptr); // same heap block landed in b, nothing was copied
+    REQUIRE(b.size() == 5);
+    REQUIRE(std::string(b.data(), b.size()) == "hello");
 }

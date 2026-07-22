@@ -31,23 +31,25 @@
 #include <cstring>
 #include <ranges>
 #include <utility>
+#include <vector>
 
 namespace cpp_utils::io
 {
 
-/** Owning counterpart to buffer_view: holds a no_init_vector<char> by value and
- * exposes the same random_access_buffer shape (read/view/size/is_valid), for buffers
- * whose lifetime must outlive whatever produced them — e.g. a freshly-decompressed
- * payload that has nowhere else to live. */
-struct owned_buffer
+/** Owning counterpart to buffer_view: holds an arbitrary contiguous byte container by
+ * value and exposes the same random_access_buffer shape (read/view/size/is_valid), for
+ * buffers whose lifetime must outlive whatever produced them — e.g. a freshly-
+ * decompressed payload that has nowhere else to live, or a caller-supplied
+ * std::vector<char> whose ownership is being transferred in. Templated on Storage so a
+ * true move is possible regardless of the caller's own container type — no forced
+ * conversion into no_init_vector, no copy. */
+template <typename Storage = containers::no_init_vector<char>>
+struct owned_buffer_t
 {
-    containers::no_init_vector<char> storage;
+    Storage storage;
 
-    owned_buffer() = default;
-    explicit owned_buffer(containers::no_init_vector<char>&& storage)
-            : storage { std::move(storage) }
-    {
-    }
+    owned_buffer_t() = default;
+    explicit owned_buffer_t(Storage&& storage) : storage { std::move(storage) } { }
 
     auto begin() const { return storage.data(); }
     auto end() const { return storage.data() + storage.size(); }
@@ -65,7 +67,10 @@ struct owned_buffer
     bool is_valid() const { return storage.data() != nullptr; }
 };
 
+using owned_buffer = owned_buffer_t<containers::no_init_vector<char>>;
+
 static_assert(std::ranges::contiguous_range<owned_buffer>);
 static_assert(types::concepts::random_access_buffer<owned_buffer>);
+static_assert(types::concepts::random_access_buffer<owned_buffer_t<std::vector<char>>>);
 
 }
