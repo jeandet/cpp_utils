@@ -210,8 +210,7 @@ constexpr inline std::size_t save_field(const auto& parent_composite, serde_sink
     static_assert(const_size_field<value_type>,
         "cpp_utils::serde::unused<T>: T must be a constant-size field; dynamic-size T is not "
         "yet supported by save_field");
-    value_type zero {};
-    return save_field(parent_composite, sink, offset, context, zero);
+    return save_field(parent_composite, sink, offset, context, field.value);
 }
 
 template <typename composite_t, typename sink_t, typename context_t>

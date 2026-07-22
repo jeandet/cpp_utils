@@ -104,8 +104,7 @@ constexpr inline std::size_t field_runtime_size(
     static_assert(const_size_field<value_type>,
         "cpp_utils::serde::unused<T>: T must be a constant-size field; dynamic-size T is not "
         "yet supported by runtime_size (save_field does not support it either)");
-    value_type zero {};
-    return field_runtime_size(parent, context, zero);
+    return field_runtime_size(parent, context, field.value);
 }
 
 template <typename composite_t, typename context_t>

@@ -69,3 +69,52 @@ TEST_CASE("unused<T> load discards a genuinely dynamic-size inner field too", "[
     // save_field intentionally does not support unused<T> for dynamic-size T (see
     // static_assert in save_field) — only the load direction is exercised here.
 }
+
+TEST_CASE("unused<T> preserves and writes a caller-assigned sentinel value", "[serde]")
+{
+    struct reserved_field
+    {
+        cpp_utils::serde::unused<int32_t> rfu;
+    };
+
+    std::vector<char> data;
+    cpp_utils::serde::serialize(reserved_field { cpp_utils::serde::unused<int32_t> { -1 } }, data);
+
+    REQUIRE(data == std::vector<char> { -1, -1, -1, -1 });
+}
+
+TEST_CASE("unused<T> defaults to zero when not explicitly set", "[serde]")
+{
+    struct reserved_field
+    {
+        cpp_utils::serde::unused<int32_t> rfu;
+    };
+
+    std::vector<char> data;
+    cpp_utils::serde::serialize(reserved_field {}, data);
+
+    REQUIRE(data == std::vector<char> { 0, 0, 0, 0 });
+}
+
+TEST_CASE("unused<T> load discards bytes without touching value", "[serde]")
+{
+    struct reserved_field
+    {
+        cpp_utils::serde::unused<int32_t> rfu;
+    };
+
+    reserved_field field { cpp_utils::serde::unused<int32_t> { -1 } };
+    std::vector<char> bytes(4, '\0');
+    cpp_utils::serde::deserialize(field, bytes, 0);
+
+    REQUIRE(field.rfu.value == -1);
+}
+
+TEST_CASE("unused<T>'s runtime_size matches sizeof(T)", "[serde]")
+{
+    struct reserved_field
+    {
+        cpp_utils::serde::unused<int32_t> rfu;
+    };
+    REQUIRE(cpp_utils::serde::runtime_size(reserved_field { cpp_utils::serde::unused<int32_t> { -1 } }) == 4);
+}

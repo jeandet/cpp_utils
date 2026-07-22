@@ -165,23 +165,37 @@ concept dynamic_array_of_constant_size_field
 
 namespace details
 {
-    struct empty_base
-    {
-    };
     struct dyn_size_base
     {
         using dyn_size_field_tag = reflexion::dyn_size_field_tag_t;
     };
 }
 
+// Primary template: T is constant-size (the common case, e.g. CDFpp's int32_t reserved
+// fields). No base class here — unused<T> stays a plain single-member aggregate so
+// `unused<int32_t>{-1}` aggregate-initializes `value` directly. (A base class subobject,
+// even an empty one, would occupy the first slot in aggregate initialization and break
+// that single-scalar brace-init syntax.)
 template <typename T>
-struct unused : std::conditional_t<!const_size_field<T>, details::dyn_size_base, details::empty_base>
+struct unused
 {
     using do_not_split = reflexion::do_not_split_t;
     using value_type = T;
 
-private:
-    char _reserved = 0;
+    T value {};
+};
+
+// T is dynamic-size: inherit dyn_size_base so is_dyn_size_field_v<unused<T>> propagates.
+// save_field/field_runtime_size already reject this case via static_assert, so `value` is
+// never written from here and the extra base subobject never needs scalar brace-init.
+template <typename T>
+    requires(!const_size_field<T>)
+struct unused<T> : details::dyn_size_base
+{
+    using do_not_split = reflexion::do_not_split_t;
+    using value_type = T;
+
+    T value {};
 };
 
 template <typename T>
