@@ -71,6 +71,30 @@ TEST_CASE("serialize and byte_sink-based serialize agree on output bytes", "[ser
     REQUIRE(via_writer == via_byte_sink);
 }
 
+TEST_CASE("serialize's return value tracks the sequential_writer's cumulative position, "
+          "not a call-local reset",
+    "[serde]")
+{
+    struct wire_pair
+    {
+        uint8_t a;
+        uint8_t b;
+    };
+    std::vector<char> data;
+    vector_writer writer { data };
+
+    writer.write("XY", 2);
+    auto offset = serialize(wire_pair { 5, 9 }, writer);
+
+    REQUIRE(offset == 4);
+    REQUIRE(offset == writer.offset());
+    REQUIRE(data == std::vector<char> { 'X', 'Y', 5, 9 });
+
+    auto offset2 = serialize(wire_pair { 1, 2 }, writer);
+    REQUIRE(offset2 == 6);
+    REQUIRE(offset2 == writer.offset());
+}
+
 TEST_CASE("serialize writes a static_array through a sequential_writer sink", "[serde]")
 {
     struct with_array

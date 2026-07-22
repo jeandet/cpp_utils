@@ -242,11 +242,27 @@ constexpr inline std::size_t save_fields(const composite_t& r, sink_t& sink,
 
 SPLIT_FIELDS(constexpr std::size_t, serialize_fields, save_fields, const);
 
+// For a byte_sink, the return value is the offset reached within `sink` relative to
+// `offset` — meaningful as an absolute address only when the caller treats `sink` as
+// a single buffer addressed from 0 (multiple serialize() calls at different `offset`
+// values into the same buffer is a valid, supported pattern). A sequential_writer has
+// no such addressable buffer — it only ever appends at its own internal cursor — so
+// the position that actually matters after the call is the writer's own sink.offset(),
+// not the call-local `offset + bytes_written_this_call` value serialize_fields
+// computes (which resets to `offset` on every call and knows nothing of previous
+// writes through the same writer). Without this, chaining multiple serialize() calls
+// through the same sequential_writer (as any record-oriented format's save path
+// does) silently returns a value `bytes_written_this_call` short of the writer's true
+// position on every call after the first.
 template <typename composite_t, serde_sink sink_t, typename context_t = no_context>
 constexpr std::size_t serialize(const composite_t& value, sink_t& sink,
     std::size_t offset = 0, const context_t& context = context_t {})
 {
-    return serialize_fields(value, sink, offset, context);
+    const auto result = serialize_fields(value, sink, offset, context);
+    if constexpr (io::sequential_writer<sink_t>)
+        return sink.offset();
+    else
+        return result;
 }
 
 }
