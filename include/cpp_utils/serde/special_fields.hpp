@@ -100,6 +100,7 @@ public:
     const value_type* data() const { return _data.data(); }
     std::size_t size() const { return _data.size(); }
     void resize(std::size_t size) { _data.resize(size); }
+    void reserve(std::size_t size) { _data.reserve(size); }
     void push_back(const value_type& value) { _data.push_back(value); }
     void push_back(value_type&& value) { _data.push_back(std::move(value)); }
     void emplace_back(const value_type& value) { _data.emplace_back(value); }

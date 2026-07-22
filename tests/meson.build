@@ -165,6 +165,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestDynamicArrayReserve',
+        'sources': ['serde/test_dynamic_array_reserve.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestUnusedField',
         'sources': ['serde/test_unused_field.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
