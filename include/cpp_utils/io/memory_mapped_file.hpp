@@ -94,7 +94,8 @@ struct memory_mapped_file
                 }
 #endif
 #ifdef USE_MapViewOfFile
-                hFile = ::CreateFile(path.c_str(), GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, 0);
+                hFile = ::CreateFile(
+                    path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0);
                 if (hFile != INVALID_HANDLE_VALUE)
                 {
                     hMapFile = ::CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
