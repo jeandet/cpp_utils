@@ -10,6 +10,15 @@ hedley_dep = dependency('hedley', main : true, fallback : ['hedley', 'hedley_dep
 
 cpp_utils_inc = include_directories(['include', '.', 'include/cpp_utils'])
 
+# Emscripten disables C++ exceptions by default; cpp_utils (e.g. nomap, dtype_dispatch) throws
+# on invalid input, so anything depending on cpp_utils_dep needs exceptions re-enabled for both
+# compiling and linking when targeting it.
+if meson.get_compiler('cpp').get_id() == 'emscripten'
+    cpp_utils_emscripten_args = ['-fexceptions']
+else
+    cpp_utils_emscripten_args = []
+endif
+
 subdir('include/cpp_utils')
 
 headers = files(
@@ -62,6 +71,8 @@ cpp_utils_project_extra_files = files(
 cpp_utils_dep = declare_dependency(
         include_directories : cpp_utils_inc,
         dependencies: [hedley_dep],
+        compile_args: cpp_utils_emscripten_args,
+        link_args: cpp_utils_emscripten_args,
         extra_files: [headers, cpp_utils_project_extra_files]
 )
 
