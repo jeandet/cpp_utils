@@ -150,6 +150,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestFieldName',
+        'sources': ['reflexion/test_field_name.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestBoundedString',
         'sources': ['serde/test_bounded_string.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
