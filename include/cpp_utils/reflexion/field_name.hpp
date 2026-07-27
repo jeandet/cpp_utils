@@ -61,21 +61,39 @@ namespace cpp_utils::reflexion::details
  * reached for T that count_members<T> already accepts, which in practice means T is
  * default-constructible (an aggregate with a reference member, the one common way to defeat
  * default-construction, already fails count_members's own probe before getting here - see
- * reflection.hpp). A prior version of this left `instance` declared-but-never-defined to
+ * reflection.hpp). An earlier version of this left `instance` declared-but-never-defined to
  * further avoid requiring default-constructibility; that turned out to be more than
- * count_members's own reach ever needed, and it made a member's address a converted constant
- * expression referring to storage that never receives a definition - some compilers
- * (confirmed failing: an Apple Clang toolchain on macOS wheel-building CI) reject that as an
- * invalid non-type template argument, even though it's never dereferenced. A genuinely
- * defined instance is uncontroversial, portable C++ and sidesteps the disagreement entirely.
+ * count_members's own reach ever needed, so it was simplified to a genuine definition -
+ * uncontroversial, portable C++.
  */
 template <typename T>
 inline T static_probe_instance {};
 
+/*
+ * A bare pointer-to-subobject used directly as a non-type template argument needs P1907R1
+ * ("generalized non-type template arguments" - WG21, still an experimental extension, not a
+ * ratified feature: __cpp_nontype_template_args isn't bumped for it). GCC has accepted this
+ * since GCC 11; Clang only since Clang 18 (2024) - confirmed failing on this project's
+ * macOS wheel-building CI, which ships Clang 15. Wrapping the pointer in a one-member
+ * aggregate and letting CTAD deduce *that* as the template argument sidesteps the gap
+ * entirely: a class-type template argument built from a pointer member is covered by
+ * P0732 ("class types as non-type template parameters"), a much older, widely-supported
+ * C++20 feature - Clang has accepted it for years. Same workaround Boost.PFR uses for its
+ * own C++20 field-name reflection (boost::pfr::detail::clang_wrapper_t), for the identical
+ * reason - see that project's core_name20_static.hpp.
+ */
+template <typename T>
+struct ptr_wrapper
+{
+    T value;
+};
+template <typename T>
+ptr_wrapper(T) -> ptr_wrapper<T>;
+
 template <typename T, std::size_t N>
 consteval auto field_ptr()
 {
-    return std::get<N>(cpp_utils_reflexion_field_ptr_tuple(static_probe_instance<T>));
+    return ptr_wrapper { std::get<N>(cpp_utils_reflexion_field_ptr_tuple(static_probe_instance<T>)) };
 }
 
 template <typename T, auto Ptr>
