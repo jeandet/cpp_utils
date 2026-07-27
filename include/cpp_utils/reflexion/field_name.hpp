@@ -56,31 +56,27 @@ namespace cpp_utils::reflexion::details
 {
 
 /*
- * Declared, never defined: only ever used inside consteval functions to form the address of
- * one of its subobjects, which never requires the object to actually be constructed or
- * linked. This gives every member of T a stable, NTTP-usable pointer without requiring T to
- * be default-constructible. Clang warns that the never-provided definition looks like an ODR
- * hazard; it isn't one here since nothing ever reads through the pointer, only its address
- * feeds into a consteval-only signature lookup.
+ * A real, defined static instance - only ever used inside consteval functions to form the
+ * address of one of its subobjects, never to read through it. This mechanism is only ever
+ * reached for T that count_members<T> already accepts, which in practice means T is
+ * default-constructible (an aggregate with a reference member, the one common way to defeat
+ * default-construction, already fails count_members's own probe before getting here - see
+ * reflection.hpp). A prior version of this left `instance` declared-but-never-defined to
+ * further avoid requiring default-constructibility; that turned out to be more than
+ * count_members's own reach ever needed, and it made a member's address a converted constant
+ * expression referring to storage that never receives a definition - some compilers
+ * (confirmed failing: an Apple Clang toolchain on macOS wheel-building CI) reject that as an
+ * invalid non-type template argument, even though it's never dereferenced. A genuinely
+ * defined instance is uncontroversial, portable C++ and sidesteps the disagreement entirely.
  */
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundefined-var-template"
-#endif
 template <typename T>
-struct static_probe
-{
-    static T instance;
-};
+inline T static_probe_instance {};
 
 template <typename T, std::size_t N>
 consteval auto field_ptr()
 {
-    return std::get<N>(cpp_utils_reflexion_field_ptr_tuple(static_probe<T>::instance));
+    return std::get<N>(cpp_utils_reflexion_field_ptr_tuple(static_probe_instance<T>));
 }
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 
 template <typename T, auto Ptr>
 consteval std::string_view raw_signature()
