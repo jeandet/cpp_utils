@@ -161,6 +161,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestReflexionHeadersCombined',
+        'sources': ['reflexion/test_reflexion_headers_combined.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestBoundedString',
         'sources': ['serde/test_bounded_string.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

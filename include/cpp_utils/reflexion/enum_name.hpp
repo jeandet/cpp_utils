@@ -44,7 +44,7 @@
  * `ns::Enum::Name`).
  */
 
-namespace cpp_utils::reflexion::details
+namespace cpp_utils::reflexion::enum_name_details
 {
 
 template <typename E, E V>
@@ -162,7 +162,7 @@ constexpr std::string_view enum_name(E value) noexcept
     // Deliberately not split into a `constexpr auto& table = table_and_count.first;` local:
     // binding a reference to a subobject of a local constexpr variable defeats GCC's
     // constant-expression tracking here, turning every call into a non-constant error.
-    constexpr auto table_and_count = details::build_enum_table<E, Min, Max>();
+    constexpr auto table_and_count = enum_name_details::build_enum_table<E, Min, Max>();
     for (std::size_t i = 0; i < table_and_count.second; ++i)
     {
         if (table_and_count.first[i].first == value)
