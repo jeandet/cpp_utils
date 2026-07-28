@@ -39,6 +39,8 @@ headers = files(
         'include/cpp_utils/io/owned_buffer.hpp',
         'include/cpp_utils/io/sequential_writer.hpp',
         'include/cpp_utils/lifetime/scope_leaving_guards.hpp',
+        'include/cpp_utils/reflexion/enum_name.hpp',
+        'include/cpp_utils/reflexion/field_name.hpp',
         'include/cpp_utils/reflexion/reflection.hpp',
         'include/cpp_utils/serde/context.hpp',
         'include/cpp_utils/serde/deserialization.hpp',

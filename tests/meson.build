@@ -156,6 +156,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestEnumName',
+        'sources': ['reflexion/test_enum_name.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestBoundedString',
         'sources': ['serde/test_bounded_string.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
