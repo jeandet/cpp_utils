@@ -77,6 +77,19 @@ cpp_utils_dep = declare_dependency(
         link_args: cpp_utils_emscripten_args,
         extra_files: [headers, cpp_utils_project_extra_files]
 )
+meson.override_dependency('cpp_utils', cpp_utils_dep)
+
+# Header-only: installing is copying the header tree. Headers include each other with relative
+# paths, so the include root is the only include path consumers need (plus hedley.h).
+install_subdir('include/cpp_utils',
+               install_dir : get_option('includedir'),
+               exclude_files : ['meson.build'])
+import('pkgconfig').generate(
+    name : 'cpp_utils',
+    description : 'Header-only C++20 utilities (containers, io, reflexion, serde); needs hedley.h',
+    url : 'https://github.com/jeandet/cpp_utils',
+    install_dir : get_option('datadir') / 'pkgconfig',
+)
 
 
 
