@@ -1,8 +1,10 @@
 #define CATCH_CONFIG_MAIN // This tells Catch to provide a main() - only do this in one cpp file
+#include <algorithm>
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <cpp_utils.hpp>
 #include <string>
+#include <vector>
 
 #include <serde/serde.hpp>
 #include <types/concepts.hpp>
@@ -49,6 +51,43 @@ TEST_CASE("Serde", "[simple structures]")
     }
 }
 
+
+TEST_CASE("Serde", "[enum members]")
+{
+    // The enum used to be written through a reference to its underlying type, which breaks
+    // aliasing rules: GCC 16 with -O2 -fsanitize=thread read back the value-initialised 0.
+    // Records are walked like CDFpp's record walker does, where it showed up.
+    enum class kind : int32_t
+    {
+        none = 0,
+        first = 1,
+        second = 2
+    };
+    struct header
+    {
+        int64_t size;
+        kind type;
+    };
+    std::array<uint8_t, 24> buffer { 12, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0 };
+    std::vector<kind> seen;
+    for (std::size_t offset = 0; offset < std::size(buffer) && std::size(seen) < 4;)
+    {
+        header h {};
+        cpp_utils::serde::deserialize(h, buffer, offset, cpp_utils::serde::no_context {});
+        switch (h.type)
+        {
+            case kind::first:
+            case kind::second:
+                seen.push_back(h.type);
+                break;
+            default:
+                seen.push_back(kind::none);
+        }
+        offset += std::max(std::size_t { 1 }, static_cast<std::size_t>(h.size));
+    }
+    REQUIRE(seen == std::vector { kind::second, kind::first });
+}
 
 TEST_CASE("Serde", "[nested structs]")
 {

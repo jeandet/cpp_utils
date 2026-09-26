@@ -85,9 +85,13 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
 constexpr inline std::size_t load_field(const auto& parent_composite, auto& parsing_context,
     std::size_t offset, const auto& context, types::concepts::enum_type auto& field)
 {
-    using underlying_t = std::underlying_type_t<std::decay_t<decltype(field)>>;
-    underlying_t& underlying_field = reinterpret_cast<underlying_t&>(field);
-    return load_field(parent_composite, parsing_context, offset, context, underlying_field);
+    // Not a reinterpret_cast to underlying_t&: writing an enum through its underlying type breaks
+    // aliasing rules, and optimizers then read back the enum's previous value.
+    using enum_t = std::decay_t<decltype(field)>;
+    std::underlying_type_t<enum_t> value {};
+    const auto end = load_field(parent_composite, parsing_context, offset, context, value);
+    field = static_cast<enum_t>(value);
+    return end;
 }
 
 template <typename field_t>
