@@ -21,11 +21,9 @@ writing a visitor for each type.
 ## `deserialize`
 
 Two overloads exist: a top-level convenience form that allocates and returns a new `T`, and an
-in-place form (generated alongside the field-splitting machinery) that fills an existing object and
-returns the offset just past what it consumed. The in-place form is what the top-level form calls
-internally, and it's also what's used to recurse into nested composite fields — but it's a plain
-public overload of `deserialize`, so you can call it directly too, e.g. to walk consecutive records
-in one buffer.
+in-place form that fills an existing object and returns the offset just past what it consumed. The
+top-level form calls the in-place one, and you can call it directly too, e.g. to walk consecutive
+records in one buffer.
 
 ```cpp
 template <typename composite_t, typename context_t = no_context>

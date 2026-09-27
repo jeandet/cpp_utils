@@ -35,7 +35,7 @@
 namespace cpp_utils::serde
 {
 
-SPLIT_FIELDS_FW_DECL(constexpr std::size_t, deserialize, );
+SPLIT_FIELDS_FW_DECL(constexpr std::size_t, deserialize_fields, );
 
 namespace details
 {
@@ -110,7 +110,7 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
         {
             for (std::size_t i = 0; i < count; ++i)
             {
-                offset = deserialize(array_field[i],
+                offset = deserialize_fields(array_field[i],
                     std::forward<decltype(parsing_context)>(parsing_context), offset, context);
             }
             return offset;
@@ -159,7 +159,7 @@ constexpr inline std::size_t load_field(const auto& parent_composite, auto& pars
         {
             for (std::size_t i = 0; i < count; ++i)
             {
-                offset = deserialize(array_field[i],
+                offset = deserialize_fields(array_field[i],
                     std::forward<decltype(parsing_context)>(parsing_context), offset, context);
             }
             return offset;
@@ -188,7 +188,7 @@ constexpr inline std::size_t load_field(const auto&, auto& parsing_context, std:
     while (offset < std::size(parsing_context))
     {
         array_field.emplace_back(field_t {});
-        offset = deserialize(
+        offset = deserialize_fields(
             array_field.back(), std::forward<decltype(parsing_context)>(parsing_context), offset,
             context);
     }
@@ -259,7 +259,7 @@ constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t
     using Field_t = std::decay_t<T>;
     constexpr std::size_t count = reflexion::count_members<Field_t>;
     if constexpr (reflexion::can_split_v<Field_t> && (count >= 1))
-        return deserialize(field, parsing_context, offset, context);
+        return deserialize_fields(field, parsing_context, offset, context);
     else
         return load_field(r, parsing_context, offset, context, std::forward<T>(field));
 }
@@ -273,7 +273,17 @@ constexpr inline std::size_t load_fields(const composite_t& r, parsing_context_t
     return load_fields(r, parsing_context, offset, context, std::forward<Ts>(fields)...);
 }
 
-SPLIT_FIELDS(constexpr std::size_t, deserialize, load_fields, );
+SPLIT_FIELDS(constexpr std::size_t, deserialize_fields, load_fields, );
+
+// Named parameters, not the variadic deserialize_fields: with it, a call without a context took
+// the composite's first field as the context.
+template <typename composite_t, typename context_t = no_context>
+constexpr std::size_t deserialize(composite_t& value, auto&& parsing_context,
+    std::size_t offset = 0, const context_t& context = context_t {})
+{
+    return deserialize_fields(
+        value, std::forward<decltype(parsing_context)>(parsing_context), offset, context);
+}
 
 template <typename composite_t, typename context_t = no_context>
 constexpr composite_t deserialize(auto&& parsing_context, [[maybe_unused]] std::size_t offset = 0,

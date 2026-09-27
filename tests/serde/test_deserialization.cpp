@@ -89,6 +89,25 @@ TEST_CASE("Serde", "[enum members]")
     REQUIRE(seen == std::vector { kind::second, kind::first });
 }
 
+TEST_CASE("Serde", "[in place]")
+{
+    // Without a context, the variadic in-place deserialize used to take the struct's first field
+    // as the context and read the other fields from the offset on.
+    struct two_ints
+    {
+        int32_t a;
+        int32_t b;
+    };
+    std::array<uint8_t, 12> buffer { 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0 };
+    two_ints s {};
+    REQUIRE(cpp_utils::serde::deserialize(s, buffer, 4) == 12);
+    REQUIRE(s.a == 1);
+    REQUIRE(s.b == 2);
+    REQUIRE(cpp_utils::serde::deserialize(s, buffer) == 8);
+    REQUIRE(s.a == 0);
+    REQUIRE(s.b == 1);
+}
+
 TEST_CASE("Serde", "[nested structs]")
 {
     struct struct2
