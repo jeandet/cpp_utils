@@ -3,6 +3,7 @@
 #include <containers/nomap.hpp>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 using namespace cpp_utils::containers;
 
@@ -212,4 +213,59 @@ TEST_CASE(
     REQUIRE_FALSE(small_map == big_map);
     REQUIRE_FALSE(big_map == small_map);
     REQUIRE(small_map != big_map);
+}
+
+TEST_CASE("nomap references survive inserting many more elements", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[0] = 42;
+    const int* held = &m.at(0);
+
+    for (int i = 1; i < 1000; ++i)
+        m[i] = i;
+
+    REQUIRE(&m.at(0) == held);
+}
+
+TEST_CASE("nomap references to other elements survive an erase", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    m[0] = 0;
+    m[1] = 1;
+    m[2] = 2;
+    const int* first = &m.at(1);
+    const int* last = &m.at(2);
+
+    m.erase(m.find(0));
+
+    REQUIRE(&m.at(1) == first);
+    REQUIRE(&m.at(2) == last);
+}
+
+TEST_CASE("nomap erase keeps the insertion order of the remaining elements", "[Containers][nomap]")
+{
+    nomap<int, int> m;
+    for (int i = 0; i < 5; ++i)
+        m[i] = i;
+
+    m.erase(m.find(1));
+    REQUIRE(m.extract(3).key() == 3);
+
+    std::vector<int> keys;
+    for (const auto& [key, value] : m)
+        keys.push_back(key);
+    REQUIRE(keys == std::vector<int> { 0, 2, 4 });
+}
+
+TEST_CASE("nomap copies are deep", "[Containers][nomap]")
+{
+    nomap<int, int> original;
+    original[1] = 10;
+
+    auto copy = original;
+    copy[1] = 20;
+
+    REQUIRE(original.at(1) == 10);
+    REQUIRE(copy.at(1) == 20);
+    REQUIRE(&copy.at(1) != &original.at(1));
 }

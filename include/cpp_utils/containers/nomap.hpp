@@ -25,6 +25,9 @@
 ----------------------------------------------------------------------------*/
 #pragma once
 #include <algorithm>
+#include <compare>
+#include <iterator>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 
@@ -95,6 +98,89 @@ struct tuple_element<1, cpp_utils::containers::nomap_node<Key, T>>
 
 namespace cpp_utils::containers
 {
+namespace details
+{
+// Dereferences the owning pointers of nomap's storage, so iterating a nomap yields its nodes.
+template <typename Node, typename Base>
+struct node_iterator
+{
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = std::remove_const_t<Node>;
+    using difference_type = std::ptrdiff_t;
+    using pointer = Node*;
+    using reference = Node&;
+
+    Base base;
+
+    node_iterator() = default;
+    explicit node_iterator(Base b) : base { b } { }
+
+    template <typename OtherNode, typename OtherBase>
+        requires std::is_convertible_v<OtherBase, Base>
+    node_iterator(const node_iterator<OtherNode, OtherBase>& other) : base { other.base }
+    {
+    }
+
+    [[nodiscard]] reference operator*() const { return **base; }
+    [[nodiscard]] pointer operator->() const { return base->get(); }
+    [[nodiscard]] reference operator[](difference_type n) const { return *base[n]; }
+
+    node_iterator& operator++()
+    {
+        ++base;
+        return *this;
+    }
+    node_iterator operator++(int) { return node_iterator { base++ }; }
+    node_iterator& operator--()
+    {
+        --base;
+        return *this;
+    }
+    node_iterator operator--(int) { return node_iterator { base-- }; }
+    node_iterator& operator+=(difference_type n)
+    {
+        base += n;
+        return *this;
+    }
+    node_iterator& operator-=(difference_type n)
+    {
+        base -= n;
+        return *this;
+    }
+
+    [[nodiscard]] friend node_iterator operator+(node_iterator it, difference_type n)
+    {
+        return it += n;
+    }
+    [[nodiscard]] friend node_iterator operator+(difference_type n, node_iterator it)
+    {
+        return it += n;
+    }
+    [[nodiscard]] friend node_iterator operator-(node_iterator it, difference_type n)
+    {
+        return it -= n;
+    }
+
+    template <typename OtherNode, typename OtherBase>
+    [[nodiscard]] difference_type operator-(const node_iterator<OtherNode, OtherBase>& other) const
+    {
+        return base - other.base;
+    }
+    template <typename OtherNode, typename OtherBase>
+    [[nodiscard]] bool operator==(const node_iterator<OtherNode, OtherBase>& other) const
+    {
+        return base == other.base;
+    }
+    template <typename OtherNode, typename OtherBase>
+    [[nodiscard]] auto operator<=>(const node_iterator<OtherNode, OtherBase>& other) const
+    {
+        return base <=> other.base;
+    }
+};
+}
+
+// Each node lives in its own allocation, so references to a node stay valid while other
+// nodes are inserted or erased: Python bindings hand out raw pointers to them.
 template <typename Key, typename T>
 struct nomap
 {
@@ -105,20 +191,37 @@ struct nomap
     using difference_type = std::ptrdiff_t;
     using reference = mapped_type&;
     using const_reference = const mapped_type&;
-    using iterator = decltype(std::declval<std::vector<value_type>>().begin());
-    using const_iterator = decltype(std::declval<std::vector<value_type>>().cbegin());
+
+private:
+    using storage_t = std::vector<std::unique_ptr<value_type>>;
+
+public:
+    using iterator = details::node_iterator<value_type, typename storage_t::iterator>;
+    using const_iterator
+        = details::node_iterator<const value_type, typename storage_t::const_iterator>;
 
     nomap() = default;
     nomap(nomap&&) = default;
-    nomap(const nomap&) = default;
-    nomap& operator=(const nomap&) = default;
+    nomap(const nomap& other) { *this = other; }
     nomap& operator=(nomap&&) = default;
+    nomap& operator=(const nomap& other)
+    {
+        if (this != &other)
+        {
+            storage_t nodes;
+            nodes.reserve(other.size());
+            for (const auto& node : other)
+                nodes.push_back(std::make_unique<value_type>(node));
+            p_nodes = std::move(nodes);
+        }
+        return *this;
+    }
 
     inline bool operator==(const nomap& other) const
     {
         if (size() != other.size())
             return false;
-        for (const auto& node : p_nodes)
+        for (const auto& node : *this)
         {
             if (!other.count(node.key()))
                 return false;
@@ -160,8 +263,7 @@ struct nomap
         auto it = find(key);
         if (it != end())
             return it->second;
-        auto& node = p_nodes.emplace_back(key, mapped_type {});
-        return node.second;
+        return _append(key, mapped_type {}).second;
     }
 
     [[nodiscard]] inline T& operator[](key_type&& key)
@@ -169,106 +271,74 @@ struct nomap
         auto it = find(key);
         if (it != end())
             return it->second;
-        auto& node = p_nodes.emplace_back(std::move(key), mapped_type {});
-        return node.second;
+        return _append(std::move(key), mapped_type {}).second;
     }
 
     [[nodiscard]] inline const T& operator[](const key_type& key) const { return this->at(key); }
 
-    [[nodiscard]] inline iterator begin() { return std::begin(p_nodes); }
+    [[nodiscard]] inline iterator begin() { return iterator { std::begin(p_nodes) }; }
 
-    [[nodiscard]] inline iterator end() { return std::end(p_nodes); }
+    [[nodiscard]] inline iterator end() { return iterator { std::end(p_nodes) }; }
 
-    [[nodiscard]] inline auto rbegin() { return std::rbegin(p_nodes); }
+    [[nodiscard]] inline auto rbegin() { return std::reverse_iterator { end() }; }
 
-    [[nodiscard]] inline auto rend() { return std::rend(p_nodes); }
+    [[nodiscard]] inline auto rend() { return std::reverse_iterator { begin() }; }
 
-    [[nodiscard]] inline const_iterator begin() const { return std::cbegin(p_nodes); }
+    [[nodiscard]] inline const_iterator begin() const { return cbegin(); }
 
-    [[nodiscard]] inline const_iterator end() const { return std::cend(p_nodes); }
+    [[nodiscard]] inline const_iterator end() const { return cend(); }
 
-    [[nodiscard]] inline auto rbegin() const { return std::crbegin(p_nodes); }
+    [[nodiscard]] inline auto rbegin() const { return crbegin(); }
 
-    [[nodiscard]] inline auto rend() const { return std::crend(p_nodes); }
+    [[nodiscard]] inline auto rend() const { return crend(); }
 
-    [[nodiscard]] inline const_iterator cbegin() const { return this->p_nodes.cbegin(); }
+    [[nodiscard]] inline const_iterator cbegin() const
+    {
+        return const_iterator { std::cbegin(p_nodes) };
+    }
 
-    [[nodiscard]] inline const_iterator cend() const { return this->p_nodes.cend(); }
+    [[nodiscard]] inline const_iterator cend() const { return const_iterator { std::cend(p_nodes) }; }
 
-    [[nodiscard]] inline auto crbegin() const { return this->p_nodes.crbegin(); }
+    [[nodiscard]] inline auto crbegin() const { return std::reverse_iterator { cend() }; }
 
-    [[nodiscard]] inline auto crend() const { return this->p_nodes.crend(); }
+    [[nodiscard]] inline auto crend() const { return std::reverse_iterator { cbegin() }; }
 
     [[nodiscard]] inline value_type extract(const_iterator position)
     {
-        if (position != cend())
-            return _extract(position - p_nodes.cbegin());
-        return {};
+        if (position == cend())
+            return {};
+        value_type node = std::move(*position.base->get());
+        p_nodes.erase(position.base);
+        return node;
     }
 
-    inline iterator erase(iterator position)
+    inline iterator erase(const_iterator position)
     {
-        if (position != end())
-        {
-            auto next_idx = (position - begin());
-            std::swap(*position, p_nodes.back());
-            p_nodes.pop_back();
-            return begin() + next_idx;
-        }
-        return end();
-    }
-
-    inline const_iterator erase(const_iterator position)
-    {
-        if (position != cend())
-        {
-            auto next_idx = (position - cbegin());
-            std::swap(p_nodes[next_idx], p_nodes.back());
-            p_nodes.pop_back();
-            return cbegin() + next_idx;
-        }
-        return cend();
+        if (position == cend())
+            return end();
+        return iterator { p_nodes.erase(position.base) };
     }
 
     inline iterator erase(const_iterator first, const_iterator last)
     {
         if (first <= last and last <= cend())
-        {
-            auto start_idx = static_cast<std::size_t>(first - cbegin());
-            auto count = static_cast<std::size_t>(last - first);
-            auto new_size = p_nodes.size() - count;
-            for (std::size_t i = 0; i < count && start_idx + i < new_size; ++i)
-            {
-                p_nodes[start_idx + i] = std::move(p_nodes[new_size + i]);
-            }
-            p_nodes.resize(new_size);
-            return begin() + start_idx;
-        }
+            return iterator { p_nodes.erase(first.base, last.base) };
         return end();
     }
 
-    [[nodiscard]] inline value_type extract(const key_type& key)
-    {
-        for (auto i = 0UL; i < std::size(p_nodes); i++)
-        {
-            if (p_nodes[i].first == key)
-                return _extract(i);
-        }
-        return {};
-    }
+    [[nodiscard]] inline value_type extract(const key_type& key) { return extract(find(key)); }
 
     friend void swap(nomap& lhs, nomap& rhs) { std::swap(lhs.p_nodes, rhs.p_nodes); }
 
-    [[nodiscard]] auto find(const key_type& key)
+    [[nodiscard]] iterator find(const key_type& key)
     {
-        return std::find_if(std::begin(p_nodes), std::end(p_nodes),
-            [&key](const auto& node) { return node.first == key; });
+        return std::find_if(begin(), end(), [&key](const auto& node) { return node.first == key; });
     }
 
-    [[nodiscard]] auto find(const key_type& key) const
+    [[nodiscard]] const_iterator find(const key_type& key) const
     {
-        return std::find_if(std::cbegin(p_nodes), std::cend(p_nodes),
-            [&key](const auto& node) { return node.first == key; });
+        return std::find_if(
+            cbegin(), cend(), [&key](const auto& node) { return node.first == key; });
     }
 
     [[nodiscard]] size_type count(const Key& key) const
@@ -286,22 +356,20 @@ struct nomap
         auto it = find(key);
         if (it == end())
         {
-            p_nodes.emplace_back(
-                std::forward<Kt>(key), mapped_type { std::forward<Args>(args)... });
-            return { p_nodes.end() - 1, true };
+            _append(std::forward<Kt>(key), mapped_type { std::forward<Args>(args)... });
+            return { end() - 1, true };
         }
         return { it, false };
     }
 
 
 private:
-    inline value_type _extract(std::size_t index)
+    template <typename Kt>
+    inline value_type& _append(Kt&& key, mapped_type&& value)
     {
-        std::swap(p_nodes[size() - 1], p_nodes[index]);
-        value_type v = std::move(p_nodes[size() - 1]);
-        p_nodes.pop_back();
-        return v;
+        return *p_nodes.emplace_back(
+            std::make_unique<value_type>(std::forward<Kt>(key), std::move(value)));
     }
-    std::vector<value_type> p_nodes;
+    storage_t p_nodes;
 };
 }

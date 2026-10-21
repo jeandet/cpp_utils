@@ -59,11 +59,13 @@ against a `std::vector<T>`, plus a `std::size(no_init_vector<T> const&)` overloa
 #include <containers/nomap.hpp>
 ```
 
-`nomap<Key, T>` is a vector-backed associative container with a `std::map`/`std::unordered_map`
-style API subset. Lookups (`find`, `at`, `operator[]`, `count`) are **linear scans** over the
-backing `std::vector` — it trades lookup complexity for cache-friendly storage and is intended for
-small maps. `erase` is O(1) but swaps the erased element with the last one before popping it, so
-it does **not** preserve the relative order of the remaining elements.
+`nomap<Key, T>` is an insertion-ordered associative container with a
+`std::map`/`std::unordered_map` style API subset, intended for small maps. Lookups (`find`, `at`,
+`operator[]`, `count`) are **linear scans**. Each element lives in its own allocation, held by a
+`std::vector` of `std::unique_ptr`: references and pointers to an element stay valid while other
+elements are inserted or erased, like `std::map`. Iterators are random access, but inserting or
+erasing invalidates them, like `std::vector`. `erase` and `extract` keep the order of the remaining
+elements, in O(n) pointer moves. Copies are deep.
 
 ### `nomap_node<Key, T>`
 
@@ -103,8 +105,7 @@ struct nomap
     std::pair<iterator, bool> emplace(Kt&& key, Args&&... args);
     [[nodiscard]] value_type extract(const_iterator position);
     [[nodiscard]] value_type extract(const key_type& key);   // empty node if key absent
-    iterator erase(iterator position);
-    const_iterator erase(const_iterator position);
+    iterator erase(const_iterator position);                // iterators convert to const_iterator
     iterator erase(const_iterator first, const_iterator last);
     // size, empty, max_size, clear, reserve, swap, begin/end/rbegin/rend/c*
 };
@@ -125,7 +126,9 @@ auto node = m.extract(1);  // removes key 1, returns its node
 node.key();                 // 1
 node.mapped();               // 10
 
-m.erase(m.find(2));   // O(1): swaps element 2 with the back, then pops it
+int& three = m.at(3);
+m.erase(m.find(2));   // the remaining elements keep their order
+three;                 // still valid: 30
 ```
 
 `operator[]` requires `T` to be default-constructible (a fresh `mapped_type{}` is inserted on a
