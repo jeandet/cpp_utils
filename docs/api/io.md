@@ -414,3 +414,114 @@ reader.read_ranges(ranges, destinations);
 reader.batches().size();     // 1
 reader.bytes_served();       // 8
 ```
+
+## reserved_region
+
+```cpp
+#include <io/reserved_region.hpp>
+```
+
+A region of address space the size of a file, whose pages cannot be read until they are
+written and sealed. Reading a page that was never sealed crashes, instead of returning zeros.
+
+```cpp
+enum class region_backing { memory, file };
+
+class reserved_region
+{
+public:
+    explicit reserved_region(std::size_t size, region_backing backing = region_backing::memory,
+        const std::filesystem::path& temp_dir = {});
+    char* data() const;
+    std::size_t size() const;
+    char* make_writable(std::size_t first_page, std::size_t page_count);
+    void seal(std::size_t first_page, std::size_t page_count);
+    void make_no_access(std::size_t first_page, std::size_t page_count);
+};
+
+std::size_t page_size();
+```
+
+- `memory` backing reserves anonymous memory. `file` backing maps a temporary file that is
+  deleted at once, so the OS can write pages to disk and drop them from RAM. With an empty
+  `temp_dir`, the file goes in the user cache directory (`$XDG_CACHE_HOME` or `~/.cache`,
+  `~/Library/Caches`, `%LOCALAPPDATA%`). Pick a real disk: on tmpfs a file is just RAM.
+- `make_writable` opens pages for writing and returns a pointer to the first one; `seal` makes
+  them read-only; `make_no_access` closes them again. A failed protection change throws
+  `std::system_error`.
+- A size of 0 maps nothing: `data()` is `nullptr`.
+- Moving is allowed; copying is not.
+
+```cpp
+cpp_utils::io::reserved_region region { 3 * cpp_utils::io::page_size() + 7 };
+std::memcpy(region.make_writable(1, 1), "hello", 5);
+region.seal(1, 1);
+region.data()[cpp_utils::io::page_size()]; // 'h'
+region.data()[0];                         // crashes: page 0 was never sealed
+```
+
+## remote_buffer
+
+```cpp
+#include <io/remote_buffer.hpp>
+```
+
+A lazily fetched, read-in-place copy of a `range_reader`'s bytes. It is meant for remote
+files (S3...), where every request costs time and money. `ensure` fetches what is missing and
+widens it to the read-ahead window, all in one `read_ranges` batch. Each byte is fetched at
+most once. Bytes that were never fetched can't be read: `check_present` throws, and a raw read
+through `data()` hits a no-access page.
+
+```cpp
+struct remote_buffer_options
+{
+    std::size_t read_ahead = 256 * 1024;
+    std::size_t tail_prefetch = 256 * 1024;
+    region_backing backing = region_backing::memory;
+    std::filesystem::path temp_dir {};
+    std::size_t download_whole_below = 0;
+    static remote_buffer_options from_env(std::string_view prefix);
+    static remote_buffer_options from_env(std::string_view prefix, remote_buffer_options defaults);
+};
+
+template <range_reader R>
+class remote_buffer
+{
+public:
+    explicit remote_buffer(R reader, remote_buffer_options options = {});
+    void ensure(std::span<const byte_range> ranges) const;
+    void ensure(std::size_t offset, std::size_t size) const;
+    void check_present(std::size_t offset, std::size_t size) const;
+    void read(char* dest, std::size_t offset, std::size_t size) const;
+    const char* data() const;
+    const char* begin() const;
+    const char* end() const;
+    std::size_t size() const;
+    bool is_valid() const;
+    const R& reader() const;
+};
+```
+
+- `read_ahead`: each fetch is widened to aligned windows of this size, rounded up to whole
+  pages.
+- `tail_prefetch`: the first `ensure` also fetches this many bytes from the end of the file,
+  in the same batch. Formats that write metadata last (CDF) need them early.
+- `download_whole_below`: if the file is smaller than this, the first `ensure` fetches all of
+  it. 0 turns it off.
+- `from_env("PREFIX_")` reads `PREFIX_READ_AHEAD`, `PREFIX_TAIL_PREFETCH`, `PREFIX_BACKING`
+  (`memory` or `file`), `PREFIX_TEMP_DIR` and `PREFIX_DOWNLOAD_WHOLE_BELOW`. A bad value
+  throws `std::invalid_argument`.
+- A range outside the file throws `std::runtime_error`. That check can't overflow, even on
+  corrupt offsets.
+- If the reader throws, `ensure` rethrows and the batch's pages stay unreadable. A later call
+  retries them.
+- `ensure` is thread-safe. The reader is never called while the cache lock is held. Threads
+  that need pages another thread is fetching wait for that fetch, rather than fetching again.
+
+```cpp
+cpp_utils::io::local_range_reader reader { "data.bin" };
+cpp_utils::io::remote_buffer buffer { reader };
+buffer.ensure(10, 4);        // one batch: [0, 256 KiB) + the last 256 KiB
+buffer.data()[12];           // read in place
+buffer.ensure(20, 4);        // already there: no fetch
+```

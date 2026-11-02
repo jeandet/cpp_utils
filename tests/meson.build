@@ -126,6 +126,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestRemoteBuffer',
+        'sources': ['io/test_remote_buffer.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestBufferView',
         'sources': ['io/test_buffer_view.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]

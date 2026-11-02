@@ -27,6 +27,8 @@ bool read_faults(const reserved_region& region, std::size_t offset)
     const pid_t pid = fork();
     if (pid == 0)
     {
+        std::signal(SIGSEGV, SIG_DFL);
+        std::signal(SIGBUS, SIG_DFL);
         volatile char c = region.data()[offset];
         (void)c;
         _exit(0);
