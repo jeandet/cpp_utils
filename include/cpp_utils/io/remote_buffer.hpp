@@ -329,9 +329,15 @@ class remote_buffer
 
 public:
     explicit remote_buffer(R reader, remote_buffer_options options = {})
+            : remote_buffer(reader, reader.size(), std::move(options))
+    {
+    }
+
+    // For callers that already know the size: a remote reader's size() is often a request.
+    remote_buffer(R reader, std::size_t size, remote_buffer_options options)
             : p_reader { std::move(reader) }
             , p_options { normalized(std::move(options)) }
-            , p_size { p_reader.size() }
+            , p_size { size }
             , p_region { p_size, p_options.backing, p_options.temp_dir }
             , p_pages(round_up(p_size, page_size()) / page_size(), page_state::absent)
     {
@@ -369,6 +375,8 @@ public:
     void check_present(std::size_t offset, std::size_t size) const
     {
         check_bounds({ offset, size });
+        if (size == 0)
+            return;
         const auto [first, last] = exact_pages({ offset, size });
         std::lock_guard lock { p_mutex };
         for (auto page = first; page < last; ++page)

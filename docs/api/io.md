@@ -409,7 +409,8 @@ copy handed to another object still reports to the original.
 - `batches()` — a snapshot of every `read_ranges` call, one vector of ranges per call.
 - `bytes_served()` — the total bytes handed out.
 - `caller_threads()` — the thread id of each call, in call order.
-- A range past the end throws `std::out_of_range`.
+- A range past the end throws `std::out_of_range`, and a destination count that differs
+  from the range count throws `std::invalid_argument`.
 
 ```cpp
 // data.bin: an existing file of at least 12 bytes
@@ -496,6 +497,7 @@ class remote_buffer
 {
 public:
     explicit remote_buffer(R reader, remote_buffer_options options = {});
+    remote_buffer(R reader, std::size_t size, remote_buffer_options options);
     void ensure(std::span<const byte_range> ranges) const;
     void ensure(std::size_t offset, std::size_t size) const;
     void check_present(std::size_t offset, std::size_t size) const;
@@ -524,8 +526,11 @@ public:
   corrupt offsets.
 - If the reader throws, `ensure` rethrows and the batch's pages stay unreadable. A later call
   retries them, including the tail or whole-file extras of a failed first fetch.
-- A reader `size()` too large to map throws `std::length_error`, and so does a `read_ahead`
-  too large to round (`std::invalid_argument`). Zero-length requests fetch nothing.
+- A `size()` too large to map throws `std::length_error`.
+- A `read_ahead` too large to round up throws `std::invalid_argument`.
+- Zero-length requests fetch nothing, and are always present.
+- `remote_buffer(reader, size, options)` takes a size the caller already knows, so the
+  reader's `size()`, often a request, is not called again.
 - `ensure` is thread-safe. The reader is never called while the cache lock is held. Threads
   that need pages another thread is fetching wait for that fetch, rather than fetching again.
 - A reader may provide `template <typename F> void blocking_wait(F&& wait) const`. That

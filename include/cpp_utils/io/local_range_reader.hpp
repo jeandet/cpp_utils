@@ -80,6 +80,8 @@ public:
 
     void read_ranges(std::span<const byte_range> ranges, std::span<char* const> destinations) const
     {
+        if (std::size(destinations) != std::size(ranges))
+            throw std::invalid_argument { "one destination per range expected" };
         for (const auto& range : ranges)
             check_bounds(range);
         log(ranges);

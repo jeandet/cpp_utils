@@ -419,3 +419,40 @@ TEST_CASE("waiting for another thread's fetch goes through the reader's blocking
     REQUIRE(*reader.waits >= 1);
     REQUIRE(reader.inner.batches().size() == 1);
 }
+
+TEST_CASE("an empty range at the end of the file is always present", "[io]")
+{
+    temp_file f { "cpp_utils_rb_empty_at_end.bin", big_size };
+    local_range_reader reader { f.path };
+    remote_buffer buffer { reader };
+    REQUIRE_NOTHROW(buffer.check_present(big_size, 0));
+}
+
+namespace
+{
+struct size_counting_reader
+{
+    local_range_reader inner;
+    std::shared_ptr<std::atomic<int>> size_calls = std::make_shared<std::atomic<int>>(0);
+
+    std::size_t size() const
+    {
+        ++*size_calls;
+        return inner.size();
+    }
+    void read_ranges(std::span<const byte_range> ranges, std::span<char* const> dest) const
+    {
+        inner.read_ranges(ranges, dest);
+    }
+};
+}
+
+TEST_CASE("a known size spares the reader its size query", "[io]")
+{
+    temp_file f { "cpp_utils_rb_known_size.bin", big_size };
+    size_counting_reader reader { local_range_reader { f.path } };
+    remote_buffer buffer { reader, big_size, remote_buffer_options {} };
+    buffer.ensure(0, 1);
+    REQUIRE(*reader.size_calls == 0);
+    REQUIRE(bytes_match(buffer.data(), 0, 1));
+}

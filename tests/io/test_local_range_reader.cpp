@@ -67,3 +67,15 @@ TEST_CASE("local_range_reader throws on a range past the end", "[io]")
     REQUIRE_THROWS_AS(reader.read_ranges(ranges, destinations), std::out_of_range);
     std::filesystem::remove(path);
 }
+
+TEST_CASE("local_range_reader rejects fewer destinations than ranges", "[io]")
+{
+    const auto path = write_temp_file("cpp_utils_local_range_reader_dest.bin", "0123456789");
+    local_range_reader reader { path };
+    const byte_range ranges[] { { 0, 2 }, { 4, 2 } };
+    char dest[2] {};
+    char* const destinations[] { dest };
+    REQUIRE_THROWS_AS(reader.read_ranges(ranges, destinations), std::invalid_argument);
+    REQUIRE(reader.batches().empty());
+    std::filesystem::remove(path);
+}
