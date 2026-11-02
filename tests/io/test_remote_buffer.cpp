@@ -1,5 +1,6 @@
 #include <atomic>
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
@@ -372,4 +373,42 @@ TEST_CASE("a file-backed remote buffer reads back its bytes", "[io]")
             .backing = region_backing::file, .temp_dir = std::filesystem::temp_directory_path() } };
     buffer.ensure(3 * window, 100);
     REQUIRE(bytes_match(buffer.data(), 3 * window, 100));
+}
+
+namespace
+{
+// A slow reader that wants to know when a thread blocks waiting for another one's fetch.
+struct waiting_reader
+{
+    local_range_reader inner;
+    std::shared_ptr<std::atomic<int>> waits = std::make_shared<std::atomic<int>>(0);
+
+    std::size_t size() const { return inner.size(); }
+    void read_ranges(std::span<const byte_range> ranges, std::span<char* const> dest) const
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds { 200 });
+        inner.read_ranges(ranges, dest);
+    }
+    template <typename F>
+    void blocking_wait(F&& wait) const
+    {
+        ++*waits;
+        wait();
+    }
+};
+}
+
+TEST_CASE("waiting for another thread's fetch goes through the reader's blocking_wait", "[io]")
+{
+    temp_file f { "cpp_utils_rb_blocking_wait.bin", big_size };
+    waiting_reader reader { local_range_reader { f.path } };
+    remote_buffer buffer { reader };
+
+    std::thread first { [&] { buffer.ensure(2 * window, 100); } };
+    std::this_thread::sleep_for(std::chrono::milliseconds { 50 });
+    buffer.ensure(2 * window, 100);
+    first.join();
+
+    REQUIRE(*reader.waits >= 1);
+    REQUIRE(reader.inner.batches().size() == 1);
 }

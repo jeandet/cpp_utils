@@ -295,15 +295,33 @@ class remote_buffer
         publish(plan, page_state::present);
     }
 
+    // Readers whose callers hold an outer lock (Python's GIL) provide blocking_wait(f), to
+    // release it while f blocks: the fetching thread may need it.
+    template <typename F>
+    void blocking_wait(F&& wait) const
+    {
+        if constexpr (requires { p_reader.blocking_wait(wait); })
+            p_reader.blocking_wait(wait);
+        else
+            wait();
+    }
+
     // True when every awaited page arrived; false when one of the fetches failed.
     [[nodiscard]] bool wait_for(const std::vector<std::size_t>& pages) const
     {
-        std::unique_lock lock { p_mutex };
-        p_page_changed.wait(lock,
+        if (pages.empty())
+            return true;
+        std::unique_lock lock { p_mutex, std::defer_lock };
+        blocking_wait(
             [&]
             {
-                return std::ranges::none_of(
-                    pages, [&](auto page) { return p_pages[page] == page_state::in_flight; });
+                lock.lock();
+                p_page_changed.wait(lock,
+                    [&]
+                    {
+                        return std::ranges::none_of(pages,
+                            [&](auto page) { return p_pages[page] == page_state::in_flight; });
+                    });
             });
         return std::ranges::all_of(
             pages, [&](auto page) { return p_pages[page] == page_state::present; });

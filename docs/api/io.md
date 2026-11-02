@@ -528,6 +528,10 @@ public:
   too large to round (`std::invalid_argument`). Zero-length requests fetch nothing.
 - `ensure` is thread-safe. The reader is never called while the cache lock is held. Threads
   that need pages another thread is fetching wait for that fetch, rather than fetching again.
+- A reader may provide `template <typename F> void blocking_wait(F&& wait) const`. That
+  waiting goes through it, so a reader whose callers hold an outer lock can release it while
+  `wait()` blocks. Example: a Python reader releases the GIL, which the fetching thread
+  needs.
 
 ```cpp
 // data.bin: an existing file larger than 512 KiB
