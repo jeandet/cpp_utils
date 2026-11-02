@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <system_error>
@@ -117,7 +118,12 @@ namespace details::region
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, CREATE_ALWAYS,
             FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
         if (file == INVALID_HANDLE_VALUE)
+        {
+            const auto error = ::GetLastError();
+            ::DeleteFileW(name);
+            ::SetLastError(error);
             throw_last_error("CreateFileW");
+        }
         DWORD returned = 0;
         ::DeviceIoControl(file, FSCTL_SET_SPARSE, nullptr, 0, nullptr, 0, &returned, nullptr);
         LARGE_INTEGER size;
@@ -280,10 +286,18 @@ class reserved_region
     std::size_t p_size = 0;
     std::size_t p_length = 0;
 
+    static std::size_t whole_pages_length(std::size_t size)
+    {
+        if (size > std::numeric_limits<std::size_t>::max() - page_size())
+            throw std::length_error { "region size too large: " + std::to_string(size) };
+        return (size + page_size() - 1) / page_size() * page_size();
+    }
+
     [[nodiscard]] char* page(std::size_t index) const { return p_mapping.data + index * page_size(); }
     [[nodiscard]] std::size_t pages_length(std::size_t first_page, std::size_t page_count) const
     {
-        if (first_page + page_count > p_length / page_size())
+        const auto pages = p_length / page_size();
+        if (page_count == 0 || first_page > pages || page_count > pages - first_page)
             throw std::out_of_range { "page range outside the region" };
         return page_count * page_size();
     }
@@ -291,7 +305,7 @@ class reserved_region
 public:
     explicit reserved_region(std::size_t size, region_backing backing = region_backing::memory,
         const std::filesystem::path& temp_dir = {})
-            : p_size { size }, p_length { (size + page_size() - 1) / page_size() * page_size() }
+            : p_size { size }, p_length { whole_pages_length(size) }
     {
         if (p_length == 0)
             return;

@@ -34,6 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <limits>
 #include <mutex>
 #include <span>
 #include <stdexcept>
@@ -135,6 +136,7 @@ class remote_buffer
     {
         std::vector<page_run> runs;
         std::vector<std::size_t> awaited;
+        bool includes_first_extras = false;
     };
 
     R p_reader;
@@ -153,6 +155,8 @@ class remote_buffer
 
     static remote_buffer_options normalized(remote_buffer_options options)
     {
+        if (options.read_ahead > std::numeric_limits<std::size_t>::max() / 2)
+            throw std::invalid_argument { "read_ahead is too large" };
         options.read_ahead = std::max(page_size(), round_up(options.read_ahead, page_size()));
         return options;
     }
@@ -188,39 +192,41 @@ class remote_buffer
         return { { p_size - tail, tail } };
     }
 
-    // Called with the lock held: claims the missing pages and lists the ones other calls are
-    // fetching.
+    // Called with the lock held. Everything that can throw (allocations) happens before the
+    // first page changes state, so a failure here leaves no page claimed.
     [[nodiscard]] fetch_plan plan(std::span<const byte_range> ranges) const
     {
-        std::vector<bool> claimed(std::size(p_pages), false);
-        if (!std::exchange(p_first_fetch_planned, true))
-            for (const auto& extra : first_fetch_extras())
-                claim(exact_pages(extra), claimed);
         fetch_plan result;
+        std::vector<bool> claimed(std::size(p_pages), false);
+        result.includes_first_extras = !p_first_fetch_planned;
+        if (result.includes_first_extras)
+            for (const auto& extra : first_fetch_extras())
+                select_absent(exact_pages(extra), claimed);
+        for (const auto& range : ranges)
+            select_absent(widened_pages(range), claimed);
         for (const auto& range : ranges)
         {
-            if (range.size == 0)
-                continue;
-            claim(widened_pages(range), claimed);
             const auto [first, last] = exact_pages(range);
             for (auto page = first; page < last; ++page)
                 if (p_pages[page] == page_state::in_flight && !claimed[page])
                     result.awaited.push_back(page);
         }
         result.runs = runs_of(claimed);
+        set_state(result.runs, page_state::in_flight);
+        p_first_fetch_planned = true;
         return result;
     }
 
-    void claim(std::pair<std::size_t, std::size_t> pages, std::vector<bool>& claimed) const
+    void select_absent(std::pair<std::size_t, std::size_t> pages, std::vector<bool>& claimed) const
     {
         for (auto page = pages.first; page < pages.second; ++page)
-        {
-            if (p_pages[page] == page_state::absent)
-            {
-                p_pages[page] = page_state::in_flight;
-                claimed[page] = true;
-            }
-        }
+            claimed[page] = claimed[page] || p_pages[page] == page_state::absent;
+    }
+
+    void set_state(const std::vector<page_run>& runs, page_state state) const noexcept
+    {
+        for (const auto& run : runs)
+            std::fill_n(std::begin(p_pages) + run.first, run.count, state);
     }
 
     static std::vector<page_run> runs_of(const std::vector<bool>& claimed)
@@ -244,52 +250,49 @@ class remote_buffer
         return { offset, std::min(run.count * page_size(), p_size - offset) };
     }
 
-    void mark(const std::vector<page_run>& runs, page_state state) const
+    void publish(const fetch_plan& plan, page_state state) const
     {
         {
             std::lock_guard lock { p_mutex };
-            for (const auto& run : runs)
-                std::fill_n(std::begin(p_pages) + run.first, run.count, state);
+            set_state(plan.runs, state);
+            if (state == page_state::absent && plan.includes_first_extras)
+                p_first_fetch_planned = false;
         }
         p_page_changed.notify_all();
     }
 
-    void close_pages(const std::vector<page_run>& runs) const noexcept
+    // A page left readable after a failed fetch would serve partial bytes: if it cannot be
+    // closed again, crashing (noexcept) is the safe outcome.
+    void close_pages(std::span<const page_run> runs) const noexcept
     {
         for (const auto& run : runs)
-        {
-            try
-            {
-                p_region.make_no_access(run.first, run.count);
-            }
-            catch (...)
-            {
-            }
-        }
+            p_region.make_no_access(run.first, run.count);
     }
 
-    void fetch(const std::vector<page_run>& runs) const
+    void fetch(const fetch_plan& plan) const
     {
         std::vector<byte_range> ranges;
         std::vector<char*> destinations;
+        std::size_t opened = 0;
         try
         {
-            for (const auto& run : runs)
+            for (const auto& run : plan.runs)
             {
                 ranges.push_back(bytes_of(run));
                 destinations.push_back(p_region.make_writable(run.first, run.count));
+                ++opened;
             }
             p_reader.read_ranges(ranges, destinations);
-            for (const auto& run : runs)
+            for (const auto& run : plan.runs)
                 p_region.seal(run.first, run.count);
         }
         catch (...)
         {
-            close_pages(runs);
-            mark(runs, page_state::absent);
+            close_pages(std::span { plan.runs }.first(opened));
+            publish(plan, page_state::absent);
             throw;
         }
-        mark(runs, page_state::present);
+        publish(plan, page_state::present);
     }
 
     // True when every awaited page arrived; false when one of the fetches failed.
@@ -318,17 +321,22 @@ public:
 
     void ensure(std::span<const byte_range> ranges) const
     {
+        std::vector<byte_range> wanted;
         for (const auto& range : ranges)
+        {
             check_bounds(range);
-        while (true)
+            if (range.size != 0)
+                wanted.push_back(range);
+        }
+        while (!wanted.empty())
         {
             fetch_plan next;
             {
                 std::lock_guard lock { p_mutex };
-                next = plan(ranges);
+                next = plan(wanted);
             }
             if (!next.runs.empty())
-                fetch(next.runs);
+                fetch(next);
             if (wait_for(next.awaited))
                 return;
         }
@@ -353,6 +361,8 @@ public:
 
     void read(char* dest, std::size_t offset, std::size_t size) const
     {
+        if (size == 0)
+            return;
         ensure(offset, size);
         std::memcpy(dest, p_region.data() + offset, size);
     }

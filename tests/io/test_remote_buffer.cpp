@@ -6,6 +6,7 @@
 #include <fstream>
 #include <io/local_range_reader.hpp>
 #include <io/remote_buffer.hpp>
+#include <latch>
 #include <limits>
 #include <memory>
 #include <random>
@@ -225,10 +226,12 @@ TEST_CASE("threads ensuring the same range share one fetch", "[io]")
 
     std::vector<std::thread> threads;
     std::atomic<int> matches = 0;
+    std::latch start { 8 };
     for (int i = 0; i < 8; ++i)
         threads.emplace_back(
             [&]
             {
+                start.arrive_and_wait();
                 buffer.ensure(2 * window, 100);
                 matches += bytes_match(buffer.data(), 2 * window, 100);
             });
@@ -236,8 +239,8 @@ TEST_CASE("threads ensuring the same range share one fetch", "[io]")
         t.join();
 
     REQUIRE(matches == 8);
-    REQUIRE(reader.bytes_served() <= big_size);
-    REQUIRE(reader.batches().size() <= 2);
+    REQUIRE(reader.batches().size() == 1);
+    REQUIRE(reader.caller_threads().size() == 1);
 }
 
 TEST_CASE("download_whole_below fetches the whole file only when it is smaller", "[io]")
@@ -291,4 +294,82 @@ TEST_CASE("options can come from environment variables", "[io]")
     REQUIRE_THROWS_AS(remote_buffer_options::from_env("X_"), std::invalid_argument);
     set_env("X_READ_AHEAD", "");
     set_env("X_BACKING", "");
+}
+
+namespace
+{
+struct huge_reader
+{
+    std::size_t claimed_size;
+    std::size_t size() const { return claimed_size; }
+    void read_ranges(std::span<const byte_range>, std::span<char* const>) const
+    {
+        throw std::logic_error { "must not be called" };
+    }
+};
+}
+
+TEST_CASE("a reader claiming an impossible size is rejected", "[io]")
+{
+    constexpr auto huge = std::numeric_limits<std::size_t>::max();
+    REQUIRE_THROWS_AS(remote_buffer(huge_reader { huge }), std::length_error);
+    REQUIRE_THROWS_AS(remote_buffer(huge_reader { huge - 100 }), std::length_error);
+}
+
+TEST_CASE("the tail is still fetched when the first fetch failed", "[io]")
+{
+    temp_file f { "cpp_utils_rb_first_fails.bin", big_size };
+    flaky_reader reader { local_range_reader { f.path }, std::make_shared<std::atomic<int>>(0),
+        std::make_shared<std::atomic<bool>>(false), 1 };
+    remote_buffer buffer { reader };
+
+    REQUIRE_THROWS_AS(buffer.ensure(0, 1), std::runtime_error);
+    *reader.healed = true;
+    buffer.ensure(0, 1);
+    const auto batches = reader.inner.batches();
+    REQUIRE(batches.size() == 1);
+    REQUIRE(batches[0].size() == 2);
+    REQUIRE(batches[0][1].offset + batches[0][1].size == big_size);
+}
+
+TEST_CASE("an empty request fetches nothing", "[io]")
+{
+    temp_file f { "cpp_utils_rb_empty_request.bin", big_size };
+    local_range_reader reader { f.path };
+    remote_buffer buffer { reader };
+    char dest[1];
+    buffer.ensure(10, 0);
+    buffer.read(dest, 10, 0);
+    REQUIRE(reader.batches().empty());
+}
+
+TEST_CASE("read_ahead is rounded up to whole pages", "[io]")
+{
+    temp_file f { "cpp_utils_rb_rounding.bin", big_size };
+    local_range_reader reader { f.path };
+    remote_buffer buffer { reader,
+        remote_buffer_options { .read_ahead = page_size() + 1, .tail_prefetch = 0 } };
+    buffer.ensure(0, 1);
+    REQUIRE(reader.bytes_served() == 2 * page_size());
+}
+
+TEST_CASE("an absurd read_ahead is rejected", "[io]")
+{
+    temp_file f { "cpp_utils_rb_absurd.bin", big_size };
+    local_range_reader reader { f.path };
+    REQUIRE_THROWS_AS(remote_buffer(reader,
+                          remote_buffer_options { .read_ahead
+                              = std::numeric_limits<std::size_t>::max() }),
+        std::invalid_argument);
+}
+
+TEST_CASE("a file-backed remote buffer reads back its bytes", "[io]")
+{
+    temp_file f { "cpp_utils_rb_file_backing.bin", big_size };
+    local_range_reader reader { f.path };
+    remote_buffer buffer { reader,
+        remote_buffer_options {
+            .backing = region_backing::file, .temp_dir = std::filesystem::temp_directory_path() } };
+    buffer.ensure(3 * window, 100);
+    REQUIRE(bytes_match(buffer.data(), 3 * window, 100));
 }

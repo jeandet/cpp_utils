@@ -1,6 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
+#include <limits>
 #include <io/reserved_region.hpp>
+#include <cstdint>
+#include <fstream>
+#include <sstream>
 #include <string>
 #ifndef _WIN32
 #include <csignal>
@@ -21,14 +25,16 @@ void write_page(reserved_region& region, std::size_t page, const std::string& te
 }
 
 #ifndef _WIN32
-// Reads one byte at offset in a child process; true when the read killed the child.
-bool read_faults(const reserved_region& region, std::size_t offset)
+// Touches one byte at offset in a child process; true when that killed the child.
+bool access_faults(const reserved_region& region, std::size_t offset, bool write)
 {
     const pid_t pid = fork();
     if (pid == 0)
     {
         std::signal(SIGSEGV, SIG_DFL);
         std::signal(SIGBUS, SIG_DFL);
+        if (write)
+            region.data()[offset] = 'w';
         volatile char c = region.data()[offset];
         (void)c;
         _exit(0);
@@ -38,6 +44,29 @@ bool read_faults(const reserved_region& region, std::size_t offset)
     return WIFSIGNALED(status)
         && (WTERMSIG(status) == SIGSEGV || WTERMSIG(status) == SIGBUS);
 }
+
+bool read_faults(const reserved_region& region, std::size_t offset)
+{
+    return access_faults(region, offset, false);
+}
+
+#ifdef __linux__
+// The /proc/self/maps line of the mapping holding p.
+std::string mapping_of(const char* p)
+{
+    std::ifstream maps { "/proc/self/maps" };
+    const auto address = reinterpret_cast<std::uintptr_t>(p);
+    for (std::string line; std::getline(maps, line);)
+    {
+        std::uintptr_t begin = 0, end = 0;
+        char dash = 0;
+        std::istringstream { line } >> std::hex >> begin >> dash >> end;
+        if (begin <= address && address < end)
+            return line;
+    }
+    return {};
+}
+#endif
 #endif
 }
 
@@ -101,3 +130,35 @@ TEST_CASE("a file region in a directory that cannot be written throws", "[io]")
     REQUIRE_THROWS(reserved_region { page_size(), region_backing::file, "/proc" });
 }
 #endif
+
+#ifndef _WIN32
+TEST_CASE("a sealed page cannot be written", "[io]")
+{
+    for (auto backing : all_backings)
+    {
+        reserved_region region { 2 * page_size(), backing };
+        write_page(region, 1, "x");
+        REQUIRE(access_faults(region, page_size(), true));
+    }
+}
+#endif
+
+#ifdef __linux__
+TEST_CASE("file backing maps a deleted temp file, memory backing does not", "[io]")
+{
+    reserved_region file_region { page_size(), region_backing::file,
+        std::filesystem::temp_directory_path() };
+    reserved_region memory_region { page_size(), region_backing::memory };
+    REQUIRE(mapping_of(file_region.data()).find("cpp_utils_region_") != std::string::npos);
+    REQUIRE(mapping_of(file_region.data()).find("(deleted)") != std::string::npos);
+    REQUIRE(mapping_of(memory_region.data()).find("cpp_utils_region_") == std::string::npos);
+}
+#endif
+
+TEST_CASE("page ranges outside the region throw without overflowing", "[io]")
+{
+    reserved_region region { 2 * page_size() };
+    REQUIRE_THROWS_AS(region.seal(2, 1), std::out_of_range);
+    REQUIRE_THROWS_AS(region.seal(std::numeric_limits<std::size_t>::max(), 2), std::out_of_range);
+    REQUIRE_THROWS_AS(region.seal(0, 0), std::out_of_range);
+}

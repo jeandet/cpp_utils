@@ -2,10 +2,16 @@
 
 Three byte-buffer types: `buffer_view`, a non-owning view over memory you already have;
 `memory_mapped_file`, a file-backed buffer opened via `mmap`/`MapViewOfFile`; and `owned_buffer`,
-an owning buffer backed by `no_init_vector`. All satisfy the same `types::concepts::random_access_buffer`
+an owning buffer backed by `no_init_vector`. These three satisfy the same `types::concepts::random_access_buffer`
 shape (`read`/`view`/`size`/`is_valid`) and `std::ranges::contiguous_range`, so they're
 interchangeable: any can be passed directly to `serde::deserialize`, and code written against one
 works unmodified against the others.
+
+For remote sources there are also `range_reader` (a transport concept), `local_range_reader` (a
+logging local transport for tests), `reserved_region` (page-protected memory) and `remote_buffer`
+(a lazily fetched cache over a `range_reader`). `remote_buffer` is contiguous and readable in
+place, but it has no `view()`, and it is neither copyable nor movable: hold it behind a
+`std::shared_ptr`.
 
 ## buffer_view
 
@@ -406,6 +412,7 @@ copy handed to another object still reports to the original.
 - A range past the end throws `std::out_of_range`.
 
 ```cpp
+// data.bin: an existing file of at least 12 bytes
 cpp_utils::io::local_range_reader reader { "data.bin" };
 const cpp_utils::io::byte_range ranges[] { { 0, 4 }, { 8, 4 } };
 char a[4], b[4];
@@ -508,17 +515,22 @@ public:
   in the same batch. Formats that write metadata last (CDF) need them early.
 - `download_whole_below`: if the file is smaller than this, the first `ensure` fetches all of
   it. 0 turns it off.
+- `backing` / `temp_dir`: where the fetched bytes live, see `reserved_region`. The default is
+  anonymous memory.
 - `from_env("PREFIX_")` reads `PREFIX_READ_AHEAD`, `PREFIX_TAIL_PREFETCH`, `PREFIX_BACKING`
   (`memory` or `file`), `PREFIX_TEMP_DIR` and `PREFIX_DOWNLOAD_WHOLE_BELOW`. A bad value
   throws `std::invalid_argument`.
 - A range outside the file throws `std::runtime_error`. That check can't overflow, even on
   corrupt offsets.
 - If the reader throws, `ensure` rethrows and the batch's pages stay unreadable. A later call
-  retries them.
+  retries them, including the tail or whole-file extras of a failed first fetch.
+- A reader `size()` too large to map throws `std::length_error`, and so does a `read_ahead`
+  too large to round (`std::invalid_argument`). Zero-length requests fetch nothing.
 - `ensure` is thread-safe. The reader is never called while the cache lock is held. Threads
   that need pages another thread is fetching wait for that fetch, rather than fetching again.
 
 ```cpp
+// data.bin: an existing file larger than 512 KiB
 cpp_utils::io::local_range_reader reader { "data.bin" };
 cpp_utils::io::remote_buffer buffer { reader };
 buffer.ensure(10, 4);        // one batch: [0, 256 KiB) + the last 256 KiB
