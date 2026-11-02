@@ -359,3 +359,58 @@ writer.offset();             // 6
 
 // file closed automatically when writer is destroyed
 ```
+
+## range_reader
+
+```cpp
+#include <io/range_reader.hpp>
+```
+
+A source of bytes fetched by ranges, such as an object on S3. It is the transport that
+`remote_buffer` reads through.
+
+```cpp
+struct byte_range
+{
+    std::size_t offset;
+    std::size_t size;
+};
+
+template <typename R>
+concept range_reader = std::copy_constructible<R> && requires(const R& r,
+    std::span<const byte_range> ranges, std::span<char* const> destinations) {
+    { r.size() } -> std::convertible_to<std::size_t>;
+    r.read_ranges(ranges, destinations);
+};
+```
+
+- `size()` — the total size of the source, in bytes.
+- `read_ranges(ranges, destinations)` — fills `destinations[i]` with exactly the bytes of
+  `ranges[i]`, or throws. A batch never succeeds partially. Batching lets a transport fetch
+  the ranges concurrently; it does not merge them.
+
+## local_range_reader
+
+```cpp
+#include <io/local_range_reader.hpp>
+```
+
+A `range_reader` over a local file that logs every call. It is meant for tests and for
+measuring what a remote reader would be asked for. Copies share the file and the log, so a
+copy handed to another object still reports to the original.
+
+- `local_range_reader(path)` — maps the file.
+- `batches()` — a snapshot of every `read_ranges` call, one vector of ranges per call.
+- `bytes_served()` — the total bytes handed out.
+- `caller_threads()` — the thread id of each call, in call order.
+- A range past the end throws `std::out_of_range`.
+
+```cpp
+cpp_utils::io::local_range_reader reader { "data.bin" };
+const cpp_utils::io::byte_range ranges[] { { 0, 4 }, { 8, 4 } };
+char a[4], b[4];
+char* const destinations[] { a, b };
+reader.read_ranges(ranges, destinations);
+reader.batches().size();     // 1
+reader.bytes_served();       // 8
+```

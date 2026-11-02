@@ -116,6 +116,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestLocalRangeReader',
+        'sources': ['io/test_local_range_reader.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestBufferView',
         'sources': ['io/test_buffer_view.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
