@@ -531,7 +531,7 @@ public:
 - A reader may provide `template <typename F> void blocking_wait(F&& wait) const`. That
   waiting goes through it, so a reader whose callers hold an outer lock can release it while
   `wait()` blocks. Example: a Python reader releases the GIL, which the fetching thread
-  needs.
+  needs. It must call `wait()` exactly once, on the calling thread.
 
 ```cpp
 // data.bin: an existing file larger than 512 KiB

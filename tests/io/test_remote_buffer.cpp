@@ -377,16 +377,19 @@ TEST_CASE("a file-backed remote buffer reads back its bytes", "[io]")
 
 namespace
 {
-// A slow reader that wants to know when a thread blocks waiting for another one's fetch.
+// A reader that holds its fetch until released, and counts the waits it is asked to run.
 struct waiting_reader
 {
     local_range_reader inner;
     std::shared_ptr<std::atomic<int>> waits = std::make_shared<std::atomic<int>>(0);
+    std::shared_ptr<std::latch> fetching = std::make_shared<std::latch>(1);
+    std::shared_ptr<std::latch> release = std::make_shared<std::latch>(1);
 
     std::size_t size() const { return inner.size(); }
     void read_ranges(std::span<const byte_range> ranges, std::span<char* const> dest) const
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds { 200 });
+        fetching->count_down();
+        release->wait();
         inner.read_ranges(ranges, dest);
     }
     template <typename F>
@@ -405,9 +408,13 @@ TEST_CASE("waiting for another thread's fetch goes through the reader's blocking
     remote_buffer buffer { reader };
 
     std::thread first { [&] { buffer.ensure(2 * window, 100); } };
-    std::this_thread::sleep_for(std::chrono::milliseconds { 50 });
-    buffer.ensure(2 * window, 100);
+    reader.fetching->wait();
+    std::thread second { [&] { buffer.ensure(2 * window, 100); } };
+    while (*reader.waits == 0)
+        std::this_thread::yield();
+    reader.release->count_down();
     first.join();
+    second.join();
 
     REQUIRE(*reader.waits >= 1);
     REQUIRE(reader.inner.batches().size() == 1);
