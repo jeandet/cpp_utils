@@ -121,6 +121,11 @@ tests = [
         'deps': [cpp_utils_dep, catch2_dep]
     },
     {
+        'name':'TestReservedRegion',
+        'sources': ['io/test_reserved_region.cpp'],
+        'deps': [cpp_utils_dep, catch2_dep]
+    },
+    {
         'name':'TestBufferView',
         'sources': ['io/test_buffer_view.cpp'],
         'deps': [cpp_utils_dep, catch2_dep]
