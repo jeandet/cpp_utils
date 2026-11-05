@@ -1,4 +1,8 @@
 build/
+build*/
 subprojects/Catch2-*
+subprojects/pybind11-*
+subprojects/hedley-*
+subprojects/.wraplock
 subprojects/packagecache/
 *.kdev4

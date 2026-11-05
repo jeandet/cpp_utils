@@ -33,6 +33,7 @@ headers = files(
         'include/cpp_utils/cpp_utils_qt/types/converters.hpp',
         'include/cpp_utils/cpp_utils_qt/types/pointers.hpp',
         'include/cpp_utils/cpp_utils_qt/trees/traits.hpp',
+        'include/cpp_utils/cpp_utils_python/numpy.hpp',
         'include/cpp_utils/endianness/endianness.hpp',
         'include/cpp_utils/io/buffer_view.hpp',
         'include/cpp_utils/io/memory_mapped_file.hpp',

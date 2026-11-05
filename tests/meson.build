@@ -253,3 +253,19 @@ foreach unit_test : tests
 						  )
   test('Test-' + unit_test['name'], test_exe, args:['-o','@0@_out.xml'.format(unit_test['name']), '-r', 'xml'])
 endforeach
+
+if get_option('python')
+  python3 = import('python').find_installation('python3')
+  pybind11_dep = dependency('pybind11', required : true)
+  numpy_include = run_command(python3, '-c', 'import numpy; print(numpy.get_include())',
+      check : true).stdout().strip()
+  python_test_module = python3.extension_module('_cpp_utils_python_test',
+      ['python/cpp_utils_python_test_module.cpp'],
+      dependencies : [cpp_utils_dep, pybind11_dep],
+      include_directories : include_directories(numpy_include),
+      install : false)
+  test('python_numpy', python3,
+      args : [files('python/test_numpy.py')],
+      env : ['PYTHONPATH=' + meson.current_build_dir()],
+      depends : python_test_module)
+endif
