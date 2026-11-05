@@ -268,4 +268,8 @@ if get_option('python')
       args : [files('python/test_numpy.py')],
       env : ['PYTHONPATH=' + meson.current_build_dir()],
       depends : python_test_module)
+  test('python_datetime', python3,
+      args : [files('python/test_datetime.py')],
+      env : ['PYTHONPATH=' + meson.current_build_dir()],
+      depends : python_test_module)
 endif
