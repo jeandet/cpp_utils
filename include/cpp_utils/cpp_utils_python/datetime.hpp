@@ -46,6 +46,14 @@ inline bool ensure_datetime_api()
     return PyDateTimeAPI != nullptr;
 }
 
+// A failed import has already raised (ImportError); turn it into a Python exception instead of
+// calling through a null C API table.
+inline void require_datetime_api()
+{
+    if (!ensure_datetime_api())
+        throw pybind11::error_already_set();
+}
+
 // A datetime.datetime argument, converted with to_time_point.
 struct py_datetime
 {
@@ -58,7 +66,7 @@ concept time_point_type = requires(T a) { a.time_since_epoch(); };
 [[nodiscard]] inline PyObject* to_datetime(const time_point_type auto& timepoint)
 {
     using namespace std::chrono;
-    ensure_datetime_api();
+    require_datetime_api();
     const auto dp = floor<days>(timepoint);
     year_month_day ymd { dp };
     hh_mm_ss time { floor<microseconds>(timepoint - dp) };
@@ -92,7 +100,7 @@ concept time_point_type = requires(T a) { a.time_since_epoch(); };
     const PyObject* dt)
 {
     using namespace std::chrono;
-    ensure_datetime_api();
+    require_datetime_api();
     const auto* date_time = reinterpret_cast<const PyDateTime_DateTime*>(dt);
     const sys_days date = year_month_day { year { PyDateTime_GET_YEAR(date_time) },
         month { static_cast<unsigned>(PyDateTime_GET_MONTH(date_time)) },

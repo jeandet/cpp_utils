@@ -18,7 +18,8 @@ py::array_t<double> make_iota(std::size_t records, std::size_t columns)
     auto values = std::make_shared<std::vector<double>>(records * columns);
     std::iota(std::begin(*values), std::end(*values), 0.);
     return cpp_utils::python::view_with_owner(values->data(),
-        std::vector<ssize_t> { static_cast<ssize_t>(records), static_cast<ssize_t>(columns) },
+        std::vector<py::ssize_t> { static_cast<py::ssize_t>(records),
+            static_cast<py::ssize_t>(columns) },
         values);
 }
 

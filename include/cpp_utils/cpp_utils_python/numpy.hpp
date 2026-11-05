@@ -45,7 +45,8 @@ namespace cpp_utils::python
 template <typename Shape>
 [[nodiscard]] inline std::size_t flat_size(const Shape& shape)
 {
-    return std::accumulate(std::cbegin(shape), std::cend(shape), 1UL, std::multiplies<std::size_t>());
+    return std::accumulate(std::cbegin(shape), std::cend(shape), std::size_t { 1 },
+        std::multiplies<std::size_t>());
 }
 
 // numpy keeps the capsule alive as long as any array built on it exists, so the shared owner
@@ -79,7 +80,7 @@ template <typename T, typename Shape, typename Owner = std::nullptr_t>
 
 template <typename T>
 [[nodiscard]] inline pybind11::array_t<std::remove_const_t<T>> view_with_owner(
-    T* data, const std::vector<ssize_t>& shape, std::shared_ptr<const void> owner)
+    T* data, const std::vector<pybind11::ssize_t>& shape, std::shared_ptr<const void> owner)
 {
     using value_t = std::remove_const_t<T>;
 
