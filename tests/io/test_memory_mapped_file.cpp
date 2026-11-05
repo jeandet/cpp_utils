@@ -156,3 +156,67 @@ TEST_CASE("memory_mapped_file cleans up its fd when mmap() itself fails", "[io]"
     std::filesystem::remove(path);
 }
 #endif
+
+TEST_CASE("memory_mapped_file survives a move and unmaps only once", "[io]")
+{
+    auto path = std::filesystem::temp_directory_path() / "cpp_utils_mmf_move_test.txt";
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << "hello world";
+    }
+
+    // The moved-from object dies before the data is read: if it still owned the mapping its
+    // destructor would unmap the bytes the moved-to object is about to read.
+    auto moved = [&path]
+    {
+        memory_mapped_file source { path.string() };
+        REQUIRE(source.is_valid());
+        memory_mapped_file target { std::move(source) };
+        REQUIRE_FALSE(source.is_valid());
+        REQUIRE(source.data() == nullptr);
+        REQUIRE(source.size() == 0);
+        return target;
+    }();
+
+    REQUIRE(moved.is_valid());
+    REQUIRE(moved.size() == 11);
+    REQUIRE(std::string(moved.data(), moved.size()) == "hello world");
+
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("memory_mapped_file move assignment releases the previous mapping", "[io]")
+{
+    auto first = std::filesystem::temp_directory_path() / "cpp_utils_mmf_move_a.txt";
+    auto second = std::filesystem::temp_directory_path() / "cpp_utils_mmf_move_b.txt";
+    {
+        std::ofstream out(first, std::ios::binary);
+        out << "first";
+    }
+    {
+        std::ofstream out(second, std::ios::binary);
+        out << "second payload";
+    }
+
+    memory_mapped_file target { first.string() };
+    REQUIRE(std::string(target.data(), target.size()) == "first");
+
+    {
+        memory_mapped_file source { second.string() };
+        target = std::move(source);
+        REQUIRE_FALSE(source.is_valid());
+    }
+
+    REQUIRE(target.is_valid());
+    REQUIRE(target.size() == 14);
+    REQUIRE(std::string(target.data(), target.size()) == "second payload");
+
+    std::filesystem::remove(first);
+    std::filesystem::remove(second);
+}
+
+// Owning a raw mapping/handle means copies would unmap twice; CEFast already hit this.
+static_assert(!std::is_copy_constructible_v<memory_mapped_file>);
+static_assert(!std::is_copy_assignable_v<memory_mapped_file>);
+static_assert(std::is_move_constructible_v<memory_mapped_file>);
+static_assert(std::is_move_assignable_v<memory_mapped_file>);

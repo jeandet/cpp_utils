@@ -84,8 +84,8 @@ struct memory_mapped_file
 #ifdef USE_MMAP
                 if (fd = open(path.c_str(), O_RDONLY, static_cast<mode_t>(0600)); fd != -1)
                 {
-                    mapped_file = details::checked_mmap(mmap(
-                        nullptr, this->f_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0UL));
+                    mapped_file = details::checked_mmap(
+                        mmap(nullptr, this->f_size, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0UL));
                     if (mapped_file == nullptr)
                     {
                         close(fd);
@@ -109,21 +109,24 @@ struct memory_mapped_file
             }
         }
     }
-    ~memory_mapped_file()
+    // A mapping owns a file descriptor and an address range (or Windows handles): a copy would
+    // unmap twice, so copies are deleted and only ownership transfer is allowed.
+    memory_mapped_file(const memory_mapped_file&) = delete;
+    memory_mapped_file& operator=(const memory_mapped_file&) = delete;
+
+    memory_mapped_file(memory_mapped_file&& other) noexcept { adopt(other); }
+
+    memory_mapped_file& operator=(memory_mapped_file&& other) noexcept
     {
-        if (mapped_file)
+        if (this != &other)
         {
-#ifdef USE_MMAP
-            munmap(mapped_file, f_size);
-            close(fd);
-#endif
-#ifdef USE_MapViewOfFile
-            ::UnmapViewOfFile(mapped_file);
-            ::CloseHandle(hFile);
-            ::CloseHandle(hMapFile);
-#endif
+            release();
+            adopt(other);
         }
+        return *this;
     }
+
+    ~memory_mapped_file() { release(); }
 
     auto read(const std::size_t offset, const std::size_t) const { return mapped_file + offset; }
 
@@ -166,6 +169,52 @@ struct memory_mapped_file
 #ifdef USE_MapViewOfFile
         return hFile != NULL && hMapFile != NULL && mapped_file != nullptr;
 #endif
+    }
+
+private:
+    void release() noexcept
+    {
+        if (mapped_file)
+        {
+#ifdef USE_MMAP
+            munmap(mapped_file, f_size);
+            close(fd);
+#endif
+#ifdef USE_MapViewOfFile
+            ::UnmapViewOfFile(mapped_file);
+            ::CloseHandle(hFile);
+            ::CloseHandle(hMapFile);
+#endif
+        }
+        reset();
+    }
+
+    void adopt(memory_mapped_file& other) noexcept
+    {
+#ifdef USE_MMAP
+        fd = other.fd;
+#endif
+#ifdef USE_MapViewOfFile
+        hMapFile = other.hMapFile;
+        hFile = other.hFile;
+#endif
+        mapped_file = other.mapped_file;
+        f_size = other.f_size;
+        other.reset();
+    }
+
+    // Leaves the object owning nothing, so its destructor is a no-op.
+    void reset() noexcept
+    {
+#ifdef USE_MMAP
+        fd = -1;
+#endif
+#ifdef USE_MapViewOfFile
+        hMapFile = NULL;
+        hFile = NULL;
+#endif
+        mapped_file = nullptr;
+        f_size = 0UL;
     }
 };
 
